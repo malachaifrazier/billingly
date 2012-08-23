@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20120823191634) do
+ActiveRecord::Schema.define(:version => 20120823201651) do
 
   create_table "customers", :force => true do |t|
     t.datetime "customer_since", :null => false
@@ -57,11 +57,13 @@ ActiveRecord::Schema.define(:version => 20120823191634) do
   end
 
   create_table "plans", :force => true do |t|
-    t.string  "name"
-    t.string  "description"
-    t.string  "length"
-    t.decimal "amount",          :precision => 11, :scale => 2, :default => 0.0, :null => false
-    t.boolean "payable_upfront"
+    t.string   "name"
+    t.string   "description"
+    t.string   "length"
+    t.decimal  "amount",          :precision => 11, :scale => 2, :default => 0.0, :null => false
+    t.boolean  "payable_upfront"
+    t.datetime "created_at",                                                      :null => false
+    t.datetime "updated_at",                                                      :null => false
   end
 
   create_table "receipts", :force => true do |t|
@@ -80,6 +82,8 @@ ActiveRecord::Schema.define(:version => 20120823191634) do
     t.datetime "expires_on"
     t.datetime "unsubscribed_on"
     t.boolean  "payable_upfront",                                :default => false, :null => false
+    t.datetime "created_at",                                                        :null => false
+    t.datetime "updated_at",                                                        :null => false
   end
 
 end

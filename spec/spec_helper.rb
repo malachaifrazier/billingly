@@ -4,6 +4,7 @@ require_relative 'dummy/config/environment'
 require 'rspec/rails'
 require 'rspec/autorun'
 require 'factory_girl_rails'
+require 'timecop'
 
 require_relative '../lib/generators/billingly_migration_generator'
 

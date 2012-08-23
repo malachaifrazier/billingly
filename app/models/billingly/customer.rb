@@ -9,18 +9,22 @@ module Billingly
   class Customer < ActiveRecord::Base
     has_many :subscriptions
     has_many :one_time_charges
+    has_many :invoices
 
     # Customers can be subscribed to one or more services. While subscribed, Customers
     # will pay recurring charges for using the given service.
     # Every customer can potentially get a special deal, but we also offer common
     # deals as 'plans' from which a proper subscription is created.
     def subscribe_to_plan(plan) 
-      sub = subscriptions.build.tap do |s|
+      old = subscriptions.last
+
+      subscriptions.build.tap do |new|
         [:payable_upfront, :description, :length, :amount].each do |k|
-          s[k] = plan[k]
+          new[k] = plan[k]
         end
-        s.subscribed_on = DateTime.now
-        s.save!
+        new.subscribed_on = DateTime.now
+        new.save!
+        old.update_attribute(:unsubscribed_on, new.subscribed_on) if old
       end
     end
     
@@ -33,5 +37,29 @@ module Billingly
       one_time_charges.create!(
         charge_on: charge_on, amount: amount, description: description)
     end
+  
+    # When call generates an invoice from the last invoice generates or in case of
+    # the first invoice since the customer became a customer.
+    def generate_invoice  
+      # Check if I should be generating an invoice already.
+      # Invoices should be created if their due_on is less than 15 days away.
+      active = active_subscription
+      period_start = if active.invoices.empty?    
+        active.invoices.last.period_end 
+      else
+        active.subscribed_on
+      end
+      
+      period_end = period_start + 1.month
+      
+      due_on = (active.payable_upfront ? period_start : period_end) +
+        Invoice.default_grace_period
+    end
+    
+    # Returns the actual subscription of the customer. while working with the 
+    # customer API a customer should only have 1 active subscription at a time.
+    def active_subscription
+      subscriptions.last
+    end 
   end
 end
