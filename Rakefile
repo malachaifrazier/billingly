@@ -22,8 +22,3 @@ end
 
 Bundler::GemHelper.install_tasks
 
-task :test_all do
-  `rm -rf spec/dummy/db/*`
-  print `cd spec/dummy; rails generate billingly_models; rake db:migrate; cd spec/dummy; rspec spec`
-end
-

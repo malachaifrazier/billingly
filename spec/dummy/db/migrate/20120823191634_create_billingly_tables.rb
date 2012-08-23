@@ -55,7 +55,6 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.datetime 'expires_on'
       t.datetime 'unsubscribed_on'
       t.boolean 'payable_upfront', null: false, default: false
-      t.timestamps
     end
     
     create_table :plans do |t|
@@ -64,7 +63,6 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.string 'length' # monthly
       t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false # 9.99
       t.boolean 'payable_upfront' # true
-      t.timestamps
     end
       
   end

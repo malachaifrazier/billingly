@@ -1,20 +1,6 @@
 require 'spec_helper'
 
 describe BillinglyMigrationGenerator do
-  it 'Creates the migration file' do
-    `rm -rf spec/dummy/db/*`
-    Dir['spec/dummy/db/migrate/*.rb'].none? do |name|
-      name =~ /create_billingly_tables.rb$/
-    end.should be_true
-
-    `cd spec/dummy; rails generate billingly_migration`
-    Dir['spec/dummy/db/migrate/*.rb'].any? do |name|
-      name =~ /create_billingly_tables.rb$/
-    end.should be_true
-
-    `rm -rf spec/dummy/db/*`
-  end
-  
 end
 
 
