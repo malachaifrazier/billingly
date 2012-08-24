@@ -5,99 +5,33 @@ end
 
 
 =begin
-
 Generamos Invoice (1): (period_start, period_end, etc)
-  :charge:
-    | name: 5mb for $1 dolar a day.
-    | kind: subscription
-    | price: $1
-    | started_using_on: 1 ene 2012
-    | stopped_using_on: null
-    :payment_request
-      | invoice: (1)
-      | amount: +31
-    :expense
-      | invoice: (1)
-      | amount: -31
+  r+ expenses                       200
+  p+ debt                                200
 
-  :payment_request
-    | invoice: (1)
-    | amount: +100
-    | charge:
-      | name: Setup fee
-      | kind: one-time
-      | price: $1
-      | started_using_on: 1 ene 2012
-      | stopped_using_on: null
-  :balance
-    | invoice: (1)
-    | amount: -100
-
-  :payment_request
-    | invoice: (1)
-    | amount: +180
-    | charge:
-      | name: 5mb for $0.5 dolars a day, paid upfront
-      | kind: one-time
-      | price: $0.5
-      | started_using_on: 1 ene 2012
-      | stopped_using_on: 1 ene 2013
-  :balance
-    | invoice: (1)
-    | amount: -180
-  
 Recibimos payment:
-  * Usuario pago 400 via paypal.
-  Dinero                                  |     800 |
-  deuda en balance del usuario            |         |      800
+  a+ cash                           300
+  g+ income                              300
 
-Saldamos cuenta (y mandamos receipt):
-  deuda en balance del usurio             |     200 |
-  pago a cobrar por uso                             |      200
+----- Check: debt < cash
+  p- debt                           200
+  a- cash                                200
 
-  deuda a contraer en balance del usuario |     100 |
-  deuda en balance del usuario                      |     100
+Generamos Invoice (2): (period_start, period_end, etc)
+  a+ ioweyou                        200
+  p+ services_to_provide                 200
 
-  deuda en balance del usurio             |     100 |
-  pago a cobrar                                     |     100
-
-  deuda en balance del usuario            |     300 |     
-  Pago a cobrar por adelantado anual      |         |     300
-
-  deuda a contraer en balance del usuario |     300 |
-  deuda por pago adel. anual              |         |     300
-    
-Mayor:
-
-    Dinero                                  |     800 |
-
-    Pago a cobrar por uso                   |       0 |
-    Pago a cobrar                           |       0 |
-    Pago a cobrar por adelantado anual      |       0 |
-
-    Servicios prestados                     |         |      200
-    deuda en balance del usuario            |         |      300
-    deuda por pago adel. anual              |         |      300
-
-Generamos Invoice (facturacion):
-  Pago a cobrar por uso                   |     200 |
-  Pago a cobrar                           |     100 |
-  Pago a cobrar por adelantado anual      |     300 |      
-  Servicios prestados                     |         |      200
-  deuda a contraer en balance del usuario |         |      400 
-  
 Recibimos payment:
-  * Usuario pago 400 via paypal.
-  Dinero                                  |     800 |
-  deuda en balance del usuario            |         |      800
+  a+ cash                           300
+  g+ income                              300
 
+----- Check: services_to_provide < cash
+  a+ paid_upfront                   200
+  p- services_to_provide            200
+  a- cash                                200
+  a- ioweyou                             200
 
-Generamos Invoice (facturacion):
-  Dinero                                  |     800 |
-  Pago a cobrar por uso                   |       0 |
-  Pago a cobrar                           |       0 |
-  Pago a cobrar por adelantado anual      |       0 |      
-  deuda por pago adel. anual              |         |      300
-  Servicios prestados                     |         |      200
-  balance                                 |         |      300 
-=end
+Upfront-paid subscription period ends.
+  r+ expense                       200
+  a- paid_upfront                       200 
+

@@ -38,24 +38,6 @@ module Billingly
         charge_on: charge_on, amount: amount, description: description)
     end
   
-    # When call generates an invoice from the last invoice generates or in case of
-    # the first invoice since the customer became a customer.
-    def generate_invoice  
-      # Check if I should be generating an invoice already.
-      # Invoices should be created if their due_on is less than 15 days away.
-      active = active_subscription
-      period_start = if active.invoices.empty?    
-        active.invoices.last.period_end 
-      else
-        active.subscribed_on
-      end
-      
-      period_end = period_start + 1.month
-      
-      due_on = (active.payable_upfront ? period_start : period_end) +
-        Invoice.default_grace_period
-    end
-    
     # Returns the actual subscription of the customer. while working with the 
     # customer API a customer should only have 1 active subscription at a time.
     def active_subscription

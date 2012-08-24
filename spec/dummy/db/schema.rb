@@ -11,22 +11,23 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20120823201651) do
+ActiveRecord::Schema.define(:version => 20120824142406) do
 
   create_table "customers", :force => true do |t|
     t.datetime "customer_since", :null => false
   end
 
   create_table "invoices", :force => true do |t|
-    t.integer  "customer_id",                                                  :null => false
+    t.integer  "customer_id",                                                     :null => false
     t.integer  "receipt_id"
-    t.decimal  "amount",       :precision => 11, :scale => 2, :default => 0.0, :null => false
-    t.datetime "due_on",                                                       :null => false
-    t.datetime "period_start",                                                 :null => false
-    t.datetime "period_end",                                                   :null => false
+    t.integer  "subscription_id"
+    t.decimal  "amount",          :precision => 11, :scale => 2, :default => 0.0, :null => false
+    t.datetime "due_on",                                                          :null => false
+    t.datetime "period_start",                                                    :null => false
+    t.datetime "period_end",                                                      :null => false
     t.text     "comment"
-    t.datetime "created_at",                                                   :null => false
-    t.datetime "updated_at",                                                   :null => false
+    t.datetime "created_at",                                                      :null => false
+    t.datetime "updated_at",                                                      :null => false
   end
 
   create_table "ledger_entries", :force => true do |t|
@@ -59,7 +60,7 @@ ActiveRecord::Schema.define(:version => 20120823201651) do
   create_table "plans", :force => true do |t|
     t.string   "name"
     t.string   "description"
-    t.string   "length"
+    t.string   "periodicity"
     t.decimal  "amount",          :precision => 11, :scale => 2, :default => 0.0, :null => false
     t.boolean  "payable_upfront"
     t.datetime "created_at",                                                      :null => false
@@ -77,7 +78,7 @@ ActiveRecord::Schema.define(:version => 20120823201651) do
     t.integer  "customer_id",                                                       :null => false
     t.string   "description",                                                       :null => false
     t.datetime "subscribed_on",                                                     :null => false
-    t.string   "length",                                                            :null => false
+    t.string   "periodicity",                                                       :null => false
     t.decimal  "amount",          :precision => 11, :scale => 2, :default => 0.0,   :null => false
     t.datetime "expires_on"
     t.datetime "unsubscribed_on"

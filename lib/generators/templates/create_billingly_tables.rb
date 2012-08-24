@@ -7,6 +7,7 @@ class CreateBillinglyTables < ActiveRecord::Migration
     create_table :invoices do |t|
       t.references :customer, null: false
       t.references :receipt
+      t.references :subscription
       t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false
       t.datetime 'due_on', null: false
       t.datetime 'period_start', null: false
@@ -31,9 +32,19 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.references :invoice
       t.references :payment
       t.references :receipt
-      t.references :one_time_charge
       t.references :subscription
-      t.string :kind # (:payment_request, :income) vs (:balance, :expense)
+      # Assets and expenses:
+      #   cash
+      #   expense
+      #   ioweyou
+      #   paid_upfront
+      #   
+      # Debt and income:
+      #   debt
+      #   income
+      #   services_to_provide
+      #   
+      t.string :account
       t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false
       t.timestamps
     end
@@ -50,7 +61,7 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.references :customer, null: false
       t.string 'description', null: false
       t.datetime 'subscribed_on', null: false
-      t.string 'length', null: false # monthly, yearly
+      t.string 'periodicity', null: false
       t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false
       t.datetime 'expires_on'
       t.datetime 'unsubscribed_on'
@@ -61,7 +72,7 @@ class CreateBillinglyTables < ActiveRecord::Migration
     create_table :plans do |t|
       t.string 'name' # Pro 50
       t.string 'description' # 50GB for 9,99 a month.
-      t.string 'length' # monthly
+      t.string 'periodicity'
       t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false # 9.99
       t.boolean 'payable_upfront' # true
       t.timestamps
@@ -70,11 +81,6 @@ class CreateBillinglyTables < ActiveRecord::Migration
   end
   
   def self.down
-    drop_table :invoice
-    drop_table :invoice_item
-    drop_table :usage
-    drop_table :payment
-    drop_table :customer
   end
 end
 

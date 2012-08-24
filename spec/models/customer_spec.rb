@@ -2,7 +2,6 @@ require 'spec_helper'
 
 describe Billingly::Customer do
   let(:plan){ build(:pro_50_monthly) }
-  let(:plan){ build(:pro_50_monthly) }
   let(:customer){ create(:customer) }
   describe 'when subscribing to a plan' do
     let(:subscription){ customer.subscribe_to_plan(plan) }
@@ -38,6 +37,7 @@ describe Billingly::Customer do
   pending 'can\'t change to a smaller plan'
   pending 'ending a subscription that is charged at the period\'s end should trigger the invoicing for usage incurred on so far. Whether you are changing to another plan or just leaving the site.'
   pending 'generates invoiceing before changeing a plan' 
+
   it 'when changing plan' do
       Timecop.travel 45.days.ago
       old = customer.subscribe_to_plan(plan)
@@ -46,22 +46,6 @@ describe Billingly::Customer do
       old.reload
       old.unsubscribed_on.to_i.should == new.subscribed_on.to_i
   end 
-
-  describe 'when creating initial invoice' do
-    subject do
-      Timecop.travel 1.month.ago
-      customer.subscribe_to_plan(plan)
-      Timecop.return 
-      customer.generate_invoice
-    end
-    
-    its(:receipt){ should be_nil }
-    its(:amount){ should == plan.amount }
-    its(:due_on){ should == Invoice.default_grace_period + subject.created_at }
-    its(:period_start){ should == customer.customer_since }
-    its(:period_end){ should == subject.period_start + 1.month }
-    
-  end
 
   describe 'when invoicing' do
     
