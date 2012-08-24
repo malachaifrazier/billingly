@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20120824142406) do
+ActiveRecord::Schema.define(:version => 20120824201927) do
 
   create_table "customers", :force => true do |t|
     t.datetime "customer_since", :null => false
@@ -31,16 +31,15 @@ ActiveRecord::Schema.define(:version => 20120824142406) do
   end
 
   create_table "ledger_entries", :force => true do |t|
-    t.integer  "customer_id",                                                        :null => false
+    t.integer  "customer_id",                                                     :null => false
     t.integer  "invoice_id"
     t.integer  "payment_id"
     t.integer  "receipt_id"
-    t.integer  "one_time_charge_id"
     t.integer  "subscription_id"
-    t.string   "kind"
-    t.decimal  "amount",             :precision => 11, :scale => 2, :default => 0.0, :null => false
-    t.datetime "created_at",                                                         :null => false
-    t.datetime "updated_at",                                                         :null => false
+    t.string   "account"
+    t.decimal  "amount",          :precision => 11, :scale => 2, :default => 0.0, :null => false
+    t.datetime "created_at",                                                      :null => false
+    t.datetime "updated_at",                                                      :null => false
   end
 
   create_table "one_time_charges", :force => true do |t|

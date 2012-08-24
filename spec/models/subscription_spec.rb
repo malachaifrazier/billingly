@@ -20,9 +20,9 @@ describe Billingly::Subscription do
       build(:first_month, periodicity: nil).period_size
     end.to raise_exception(ArgumentError)
   end
-
-  describe 'when generating the next invoice' do
-    describe 'when generating the first invoice for a subscription' do
+  
+  describe 'when invoicing' do
+    describe 'when generating the first invoice' do
       let(:subscription){ create(:first_month) }
 
       subject{ subscription.generate_next_invoice }
@@ -34,13 +34,8 @@ describe Billingly::Subscription do
       it 'starts invoicing from the time the subscription started' do
         subject.period_start.should == subscription.subscribed_on
       end
-
-      it 'sets the right due date' do
-        subject.due_on.to_date.should ==
-          (subscription.created_at.to_date + Billingly::Subscription::GRACE_PERIOD)
-      end
     end
-    
+
     it 'creates new invoices for the period starting when the previous period ended' do
       subscription = create(:fourth_month)
       old_end = subscription.invoices.last.period_end
@@ -56,7 +51,7 @@ describe Billingly::Subscription do
         subscription.generate_next_invoice.should be_nil
       end.not_to change{ Billingly::Invoice.count }
     end
-    
+
     it 'does not generate a next invoice if last invoice has been generated already' do
       subscription = create(:fourth_month)
       subscription.generate_next_invoice
@@ -64,10 +59,44 @@ describe Billingly::Subscription do
         subscription.generate_next_invoice.should be_nil
       end.not_to change{ Billingly::Invoice.count }
     end
+  end
+  
+  describe 'when invoicing a yearly, paid upfront subscription' do
+    it 'sets the right due date for the first invoice' do
+      subscription = create(:first_year)
+      first_invoice = subscription.generate_next_invoice
+      first_invoice.due_on.to_date.should ==
+          (subscription.subscribed_on.to_date + Billingly::Subscription::GRACE_PERIOD)
+    end
+
+    it 'registers our mutual debt with the customer to provide and pay' do
+      subscription = create(:first_year)
+      expect do
+        invoice = subscription.generate_next_invoice 
+        %w(ioweyou services_to_provide).each do |account|
+          invoice.ledger_entries.find_by_account(account).tap do |l|
+            l.amount.should == subscription.amount
+            l.receipt.should be_nil
+            l.invoice.should == invoice
+            l.customer == subscription.customer 
+          end
+        end
+      end.to change{ subscription.ledger_entries.count }.by(2)
+      
+    end
+  end
+
+  describe 'when invoicing a due-month subscription' do
+    it 'sets the right due date for the first invoice' do
+      subscription = create(:first_month)
+      first_invoice = subscription.generate_next_invoice
+      first_invoice.due_on.to_date.should ==
+          (subscription.subscribed_on + 1.month + Billingly::Subscription::GRACE_PERIOD).to_date
+    end
     
     it 'does not generate invoices if it is more than 15 days until their due date' do
-      # If I subscribed exactly four months ago, and I pay on due month, my next invoice's due date
-      # should be today + grace_period
+      # If I subscribed exactly four months ago, and I pay on due month,
+      # my next invoice's due date should be today + grace_period
       grace_period = Billingly::Subscription::GRACE_PERIOD
       heads_up = Billingly::Subscription::GENERATE_AHEAD
       subscription = create(:fourth_month)
@@ -87,5 +116,21 @@ describe Billingly::Subscription do
       
       Timecop.return
     end
+    
+    it 'registers the expense right away in the ledger' do
+      subscription = create(:first_month)
+      expect do
+        invoice = subscription.generate_next_invoice 
+        %w(expenses debt).each do |account|
+          invoice.ledger_entries.find_by_account(account).tap do |l|
+            l.amount.should == subscription.amount
+            l.receipt.should be_nil
+            l.invoice.should == invoice
+            l.customer == subscription.customer 
+          end
+        end
+      end.to change{ subscription.ledger_entries.count }.by(2)
+    end
   end
+ 
 end

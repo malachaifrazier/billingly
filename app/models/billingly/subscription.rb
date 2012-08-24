@@ -1,6 +1,6 @@
 module Billingly
   class Subscription < ActiveRecord::Base
-    
+    has_many :ledger_entries
     # If a subscription is payable_upfront, then the customer effectively owes us
     # since the day in which a given period starts.
     # If a subscription is payable on 'due-month', then the customer effectively
@@ -50,8 +50,24 @@ module Billingly
       to = from + period_size
       due_on = (payable_upfront ? from : to) + GRACE_PERIOD
       return unless DateTime.now + GENERATE_AHEAD > due_on
-      invoices.create!(customer: customer, amount: amount,
+
+      invoice = invoices.create!(customer: customer, amount: amount,
         due_on: due_on, period_start: from, period_end: to)
+      
+
+      # when generating an upfront invoice the ledger should register a
+      # commitment between the service we will provide and the money we will
+      # receive.
+      # In case of a due-month payment the service was already provide so we 
+      # register a debt and an expense.
+      accounts = payable_upfront ? %w(ioweyou services_to_provide) : %w(expenses debt)
+
+      accounts.each do |account|
+        ledger_entries.create!(customer: customer, account: account,
+          invoice: invoice, amount: amount ) 
+      end
+
+      return invoice
     end
     
   end

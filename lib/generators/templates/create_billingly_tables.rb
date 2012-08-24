@@ -32,10 +32,10 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.references :invoice
       t.references :payment
       t.references :receipt
-      t.references :subscription
+      t.references :subscription, null: false 
       # Assets and expenses:
       #   cash
-      #   expense
+      #   expenses
       #   ioweyou
       #   paid_upfront
       #   
