@@ -10,38 +10,54 @@ module Billingly
     has_many :subscriptions
     has_many :one_time_charges
     has_many :invoices
+    has_many :ledger_entries
+    
+    attr_accessible :customer_since
 
-    # Customers can be subscribed to one or more services. While subscribed, Customers
-    # will pay recurring charges for using the given service.
-    # Every customer can potentially get a special deal, but we also offer common
+    # Customers subscribe to the service and perform periodic payments to continue using it.
+    # We offer common plans stating how much and how often they should pay, also, if the
+    # payment is to be done at the beginning or end of the period (upfront or due-month)
+    # Every customer can potentially get a special deal, but we offer common
     # deals as 'plans' from which a proper subscription is created.
     def subscribe_to_plan(plan) 
       old = subscriptions.last
 
       subscriptions.build.tap do |new|
-        [:payable_upfront, :description, :length, :amount].each do |k|
+        [:payable_upfront, :description, :periodicity, :amount].each do |k|
           new[k] = plan[k]
         end
-        new.subscribed_on = DateTime.now
+        new.subscribed_on = Time.now
         new.save!
         old.update_attribute(:unsubscribed_on, new.subscribed_on) if old
+        new.generate_next_invoice  
       end
     end
     
-    # We can schedule one-time charges for a user using this short-hand method.
-    # The charge_on date is the date in which you expect the invoicing script
-    # to pick up and inform the charge. You can't schedule one-time charges
-    # for periods that have already been invoiced.
-    def schedule_one_time_charge(charge_on, amount, description)
-      return if charge_on < 1.day.from_now
-      one_time_charges.create!(
-        charge_on: charge_on, amount: amount, description: description)
-    end
-  
     # Returns the actual subscription of the customer. while working with the 
     # customer API a customer should only have 1 active subscription at a time.
     def active_subscription
       subscriptions.last
     end 
+    
+    # Every transaction is registered in the journal from where a general ledger can
+    # be retrieved.
+    # Due to silly rounding errors on sqlite we need to convert decimals to float and then to
+    # decimals again. :S
+    def ledger
+      ({}).tap do |all|
+        ledger_entries.group_by(&:account).collect do |account, entries|
+          all[account.to_sym] = entries.collect(&:amount).collect(&:to_f).inject(0.0) do |sum,item|
+            (BigDecimal.new(sum.to_s) + BigDecimal.new(item.to_s)).to_f
+          end
+        end
+      end
+    end
+    
+    # Credits a payment for a customer, settling invoices if possible.
+    def credit_payment(amount)
+      Billingly::Payment.credit_for(self, amount)
+      pending = invoices.where(receipt_id: nil).order('period_start ASC').first
+      pending.settle unless pending.nil?
+    end
   end
 end

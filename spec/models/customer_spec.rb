@@ -3,40 +3,42 @@ require 'spec_helper'
 describe Billingly::Customer do
   let(:plan){ build(:pro_50_monthly) }
   let(:customer){ create(:customer) }
+  
+  it 'has a ledger' do
+    Billingly::Payment.credit_for(customer, 100.0)
+    Billingly::Payment.credit_for(customer, 200.0)
+    customer.ledger[:cash].should == 300
+  end
+
   describe 'when subscribing to a plan' do
     let(:subscription){ customer.subscribe_to_plan(plan) }
 
     subject { subscription }
     
-    [:payable_upfront, :description, :length, :amount].each do |k|
+    [:payable_upfront, :description, :periodicity, :amount].each do |k|
       its(k){ should == plan.send(k) }
     end
     
-    it('Makes subscription immediate') do
-      subscription.subscribed_on.to_date.should == Date.today 
+    it 'Makes subscription immediate' do
+      subscription.subscribed_on.to_time.to_s.should == Time.now.utc.to_s
+    end
+    
+    it 'invoices payable_upfront plans right away' do
+      expect do
+        customer.subscribe_to_plan(create(:pro_50_yearly))    
+      end.to change{ customer.invoices.count }.by(1)
+    end
+
+    it 'does not invoice non payable_upfront plans until later' do
+      expect do
+        customer.subscribe_to_plan(create(:pro_50_monthly))    
+      end.not_to change{ customer.invoices.count }
     end
   end
   
-  describe 'when incurring on a one-time charge' do
-    let(:a_date){ 3.days.from_now }
-    subject do
-      customer.schedule_one_time_charge(a_date, 10.0, 'setup fee')
-    end
-    
-    its(:amount){ should == 10.0 }
-    its(:charge_on){ should == a_date }
-    its(:description){ should == 'setup fee' }
-    
-    it 'should not allow creating charges in the past' do
-      customer.schedule_one_time_charge(5.days.ago, 1, 'invalid')
-        .should be_nil
-    end
-  end
-
   pending 'can not suscribe more than one time to the same plan'
   pending 'can\'t change to a smaller plan'
-  pending 'ending a subscription that is charged at the period\'s end should trigger the invoicing for usage incurred on so far. Whether you are changing to another plan or just leaving the site.'
-  pending 'generates invoiceing before changeing a plan' 
+  pending 'generates invoice before changing a plan' 
 
   it 'when changing plan' do
       Timecop.travel 45.days.ago
@@ -46,28 +48,17 @@ describe Billingly::Customer do
       old.reload
       old.unsubscribed_on.to_i.should == new.subscribed_on.to_i
   end 
-
-  describe 'when invoicing' do
-    
-    pending 'does not create more than one invoice per period'
-
-    pending 'invoices are calculated from the time of last invoice'
-    pending 'sends an invoice for a monthly charge'
-    pending 'sends an invoice for the yearly subscription'
-    pending 'does not send invoices when in the middle of a yearly subscription'
-    pending 'sends an invoice for a one time charge'
-    pending 'sends an invoice for a monthly charge and a one time charge'
-  end
   
-  describe 'when receiving payment' do
-    pending 'receives a payment from paypal'
-    pending 'receives a payment with credit card'
-    pending 'receiving payment tries to settle invoices immediately'
-  end
-  
-  describe 'when settling accounts and sending receipts' do
-    pending 'settles an invoice with the current balance'
-    pending 'does not settle invoice if balance is not enough'
-    pending 'the oldest invoice is the first to be charged'
+  it 'Settles oldest invoice when receiving a payment' do
+    subscription = customer.subscribe_to_plan(create(:pro_50_monthly))
+    Timecop.travel 2.month.from_now
+    oldest = subscription.generate_next_invoice
+    newest = subscription.generate_next_invoice
+    customer.credit_payment(200)
+    oldest.reload
+    newest.reload
+    oldest.should be_paid
+    newest.should_not be_paid
+    Timecop.return
   end
 end

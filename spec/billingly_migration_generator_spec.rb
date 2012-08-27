@@ -35,3 +35,4 @@ Upfront-paid subscription period ends.
   r+ expense                       200
   a- paid_upfront                       200 
 
+=end

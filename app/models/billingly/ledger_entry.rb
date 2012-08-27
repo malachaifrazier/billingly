@@ -5,7 +5,10 @@ module Billingly
     belongs_to :payment
     belongs_to :receipt
     belongs_to :subscription
+
+    validates :account, presence: true
     
-    attr_accessible :customer, :account, :invoice, :amount 
+    attr_accessible :customer, :account, :invoice, :payment, :receipt, :subscription, :amount 
+    
   end
 end

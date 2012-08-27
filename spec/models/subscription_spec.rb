@@ -132,5 +132,17 @@ describe Billingly::Subscription do
       end.to change{ subscription.ledger_entries.count }.by(2)
     end
   end
- 
+  
+  it 'generates invoices for all the subscriptions that do not have their next invoice yet' do
+    3.times{ create(:first_month, customer: create(:customer)) }
+    
+    Billingly::Subscription.first.generate_next_invoice
+    
+    expect do
+      Billingly::Subscription.generate_next_invoices
+    end.to change{ Billingly::Invoice.count }.by(2)
+
+    Timecop.return
+  end
+  
 end

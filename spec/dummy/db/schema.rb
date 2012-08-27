@@ -11,23 +11,24 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20120824201927) do
+ActiveRecord::Schema.define(:version => 20120827210840) do
 
   create_table "customers", :force => true do |t|
     t.datetime "customer_since", :null => false
   end
 
   create_table "invoices", :force => true do |t|
-    t.integer  "customer_id",                                                     :null => false
+    t.integer  "customer_id",                                                          :null => false
     t.integer  "receipt_id"
     t.integer  "subscription_id"
-    t.decimal  "amount",          :precision => 11, :scale => 2, :default => 0.0, :null => false
-    t.datetime "due_on",                                                          :null => false
-    t.datetime "period_start",                                                    :null => false
-    t.datetime "period_end",                                                      :null => false
+    t.decimal  "amount",               :precision => 11, :scale => 2, :default => 0.0, :null => false
+    t.datetime "due_on",                                                               :null => false
+    t.datetime "period_start",                                                         :null => false
+    t.datetime "period_end",                                                           :null => false
     t.text     "comment"
-    t.datetime "created_at",                                                      :null => false
-    t.datetime "updated_at",                                                      :null => false
+    t.datetime "acknowledged_expense"
+    t.datetime "created_at",                                                           :null => false
+    t.datetime "updated_at",                                                           :null => false
   end
 
   create_table "ledger_entries", :force => true do |t|

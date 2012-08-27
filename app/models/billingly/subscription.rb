@@ -53,7 +53,6 @@ module Billingly
 
       invoice = invoices.create!(customer: customer, amount: amount,
         due_on: due_on, period_start: from, period_end: to)
-      
 
       # when generating an upfront invoice the ledger should register a
       # commitment between the service we will provide and the money we will
@@ -68,6 +67,15 @@ module Billingly
       end
 
       return invoice
+    end
+    
+    # This class method is called from a cron job, it creates invoices for all the subscriptions
+    # that still need their invoice created.
+    # TODO: This goes through all the active subscriptions, make it smarter so that the batch job runs quicker.
+    def self.generate_next_invoices
+      where(unsubscribed_on: nil).each do |subscription|
+        subscription.generate_next_invoice
+      end
     end
     
   end

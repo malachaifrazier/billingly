@@ -13,6 +13,7 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.datetime 'period_start', null: false
       t.datetime 'period_end', null: false
       t.text 'comment'
+      t.datetime :acknowledged_expense
       t.timestamps
     end
 
@@ -32,7 +33,7 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.references :invoice
       t.references :payment
       t.references :receipt
-      t.references :subscription, null: false 
+      t.references :subscription
       # Assets and expenses:
       #   cash
       #   expenses
