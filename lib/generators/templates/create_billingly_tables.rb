@@ -1,7 +1,7 @@
 class CreateBillinglyTables < ActiveRecord::Migration
   def self.up
     create_table :customers do |t|
-      t.datetime 'customer_since', null: false
+      t.datetime 'deactivated_debtor_since'
     end
     
     create_table :invoices do |t|
@@ -12,6 +12,7 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.datetime 'due_on', null: false
       t.datetime 'period_start', null: false
       t.datetime 'period_end', null: false
+      t.datetime 'deleted_on'
       t.text 'comment'
       t.datetime :acknowledged_expense
       t.timestamps
@@ -30,31 +31,12 @@ class CreateBillinglyTables < ActiveRecord::Migration
 
     create_table :ledger_entries do |t|
       t.references :customer, null: false
+      t.string :account, null: false
+      t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false
+      t.references :subscription
       t.references :invoice
       t.references :payment
       t.references :receipt
-      t.references :subscription
-      # Assets and expenses:
-      #   cash
-      #   expenses
-      #   ioweyou
-      #   paid_upfront
-      #   
-      # Debt and income:
-      #   debt
-      #   income
-      #   services_to_provide
-      #   
-      t.string :account
-      t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false
-      t.timestamps
-    end
-    
-    create_table :one_time_charges do |t|
-      t.references :customer, null: false
-      t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false
-      t.string 'description', null: false
-      t.datetime 'charge_on', null: false
       t.timestamps
     end
     
@@ -64,7 +46,6 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.datetime 'subscribed_on', null: false
       t.string 'periodicity', null: false
       t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false
-      t.datetime 'expires_on'
       t.datetime 'unsubscribed_on'
       t.boolean 'payable_upfront', null: false, default: false
       t.timestamps

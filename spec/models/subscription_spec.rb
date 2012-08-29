@@ -59,23 +59,27 @@ describe Billingly::Subscription do
         subscription.generate_next_invoice.should be_nil
       end.not_to change{ Billingly::Invoice.count }
     end
+    
+    it 'should not invoice debtors' do
+      pending
+    end
   end
   
   describe 'when invoicing a yearly, paid upfront subscription' do
     it 'sets the right due date for the first invoice' do
-      subscription = create(:first_year)
+      subscription = create(:yearly, subscribed_on: Date.today)
       first_invoice = subscription.generate_next_invoice
       first_invoice.due_on.to_date.should ==
           (subscription.subscribed_on.to_date + Billingly::Subscription::GRACE_PERIOD)
     end
 
     it 'registers our mutual debt with the customer to provide and pay' do
-      subscription = create(:first_year)
+      subscription = create(:yearly, subscribed_on: Date.today)
       expect do
         invoice = subscription.generate_next_invoice 
         %w(ioweyou services_to_provide).each do |account|
           invoice.ledger_entries.find_by_account(account).tap do |l|
-            l.amount.should == subscription.amount
+            l.amount.to_f.should == subscription.amount.to_f
             l.receipt.should be_nil
             l.invoice.should == invoice
             l.customer == subscription.customer 
@@ -144,5 +148,4 @@ describe Billingly::Subscription do
 
     Timecop.return
   end
-  
 end

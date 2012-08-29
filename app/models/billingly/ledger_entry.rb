@@ -6,7 +6,10 @@ module Billingly
     belongs_to :receipt
     belongs_to :subscription
 
-    validates :account, presence: true
+    validates :amount, presence: true
+    validates :customer, presence: true
+    validates :account, presence: true, inclusion:
+      %w(cash expenses ioweyou paid_upfront debt income services_to_provide)
     
     attr_accessible :customer, :account, :invoice, :payment, :receipt, :subscription, :amount 
     

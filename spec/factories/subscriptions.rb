@@ -35,9 +35,18 @@ FactoryGirl.define do
       description 'yearly subscription for 99.99'
       amount BigDecimal.new('99.99')
       payable_upfront true
-
+      
       factory :first_year do
         subscribed_on Date.today
+
+        trait :overdue do
+          subscribed_on 30.days.ago
+        end
+
+        trait :deactivated do
+          association :customer, factory: :deactivated_customer
+        end
+
         after :create do |it, _|
           from = it.subscribed_on
           to = from + 1.year

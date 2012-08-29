@@ -27,43 +27,25 @@ describe Billingly::Invoice do
     it 'creates ledger entries for a subscription that was paid on due-month' do
       Billingly::Customer.any_instance.stub(ledger: {cash: 500})
       customer = invoice.customer
-      expect do
+      
+      should_add_to_ledger(customer, 2) do
         receipt = invoice.settle
-        %w(debt cash).each do |account|
-          receipt.ledger_entries.find_by_account(account).tap do |l|
-            l.should_not be_nil
-            l.amount.to_f.should == -(invoice.amount)
-            l.receipt.should == receipt
-            l.invoice.should be_nil
-            l.payment.should be_nil
-            l.customer == customer 
-          end
-        end
-      end.to change{ customer.ledger_entries.count }.by(2)
+        should_have_ledger_entries(customer, -(invoice.amount), :debt, :cash,
+          receipt: receipt, subscription: invoice.subscription)
+      end
     end
 
     it 'creates ledger entries for a subscription that was paid upfront' do
       Billingly::Customer.any_instance.stub(ledger: {cash: 500})
       customer = upfront_invoice.customer
-      expect do
+
+      should_add_to_ledger(customer, 4) do
         receipt = upfront_invoice.settle
-        %w(paid_upfront cash services_to_provide ioweyou).each do |account|
-          receipt.ledger_entries.find_by_account(account).tap do |l|
-            l.should_not be_nil
-            l.receipt.should == receipt
-            l.invoice.should be_nil
-            l.payment.should be_nil
-            l.customer == customer 
-          end
-        end
-        %w(ioweyou cash services_to_provide).each do |account|
-          receipt.ledger_entries.find_by_account(account).tap do |l|
-            l.amount.to_f.should == -(upfront_invoice.amount.to_f)
-          end
-        end
-        receipt.ledger_entries.find_by_account('paid_upfront')
-          .amount.to_f.should == upfront_invoice.amount.to_f
-      end.to change{ customer.ledger_entries.count }.by(4)
+        extra = {receipt: receipt, subscription: upfront_invoice.subscription}
+        should_have_ledger_entries(customer, -(upfront_invoice.amount),
+          :cash, :services_to_provide, :ioweyou, extra)
+        should_have_ledger_entries(customer, upfront_invoice.amount, :paid_upfront, extra)
+      end
     end
 
     it 'does not settle if the customer balance is not enough to cover it' do
@@ -82,28 +64,17 @@ describe Billingly::Invoice do
     it 'Acknowledges the expense of providing the service to the user, debiting from their upfront payment' do
       Billingly::Customer.any_instance.stub(ledger: {cash: 500})
       customer = upfront_invoice.customer
+      amount = upfront_invoice.amount
       upfront_invoice.settle
 
       Timecop.travel(1.year.from_now + 1.day)
 
-      expect do
+      should_add_to_ledger(customer, 2) do
         upfront_invoice.acknowledge_expense
-        %w(expenses paid_upfront).each do |account|
-          upfront_invoice.ledger_entries.find_by_account(account).tap do |l|
-            l.should_not be_nil
-            l.receipt.should be_nil
-            l.invoice.should == upfront_invoice
-            l.customer == upfront_invoice.customer 
-          end
-        end
-
-        upfront_invoice.ledger_entries.where(account:'paid_upfront').last
-          .amount.to_f.should == -(upfront_invoice.amount.to_f)
-
-        upfront_invoice.ledger_entries.where(account:'expenses').last
-          .amount.to_f.should == upfront_invoice.amount.to_f
-
-      end.to change{ upfront_invoice.ledger_entries.count }.by(2)
+        extra = {invoice: upfront_invoice, subscription: upfront_invoice.subscription}
+        should_have_ledger_entries(customer, -(amount), :paid_upfront, extra)
+        should_have_ledger_entries(customer, amount, :expenses, extra)
+      end
 
       upfront_invoice.should be_acknowledged_expense
 
@@ -134,12 +105,10 @@ describe Billingly::Invoice do
     it 'does not do anything if the subscription is paid in due-month' do
       Billingly::Customer.any_instance.stub(ledger: {cash: 500})
       invoice.settle
-      Timecop.travel 370.days.from_now
-      invoice.should be_acknowledged_expense
       expect do
         invoice.acknowledge_expense
       end.not_to change{ invoice.ledger_entries.count }
-      Timecop.return
+      invoice.should_not be_acknowledged_expense
     end
     
     it 'does not acknowledge the expense twice' do
@@ -160,7 +129,7 @@ describe Billingly::Invoice do
   it 'Acknowledges expenses for all invoices that have not been acknowledged yet' do
     Billingly::Customer.any_instance.stub(ledger: {cash: 200})
     invoice = create(:first_year).invoices.first
-    2.times{ create(:first_year, customer: Billingly::Customer.create!(customer_since: 1.day.ago)) }
+    2.times{ create(:first_year, customer: create(:customer)) }
     Billingly::Invoice.all.each {|i| i.settle }
     
     Timecop.travel 370.days.from_now
@@ -173,4 +142,9 @@ describe Billingly::Invoice do
 
     Timecop.return
   end
+  
+  it 'should be able to forfeit invoices' do
+    pending
+  end
+  
 end

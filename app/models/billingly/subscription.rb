@@ -60,11 +60,7 @@ module Billingly
       # In case of a due-month payment the service was already provide so we 
       # register a debt and an expense.
       accounts = payable_upfront ? %w(ioweyou services_to_provide) : %w(expenses debt)
-
-      accounts.each do |account|
-        ledger_entries.create!(customer: customer, account: account,
-          invoice: invoice, amount: amount ) 
-      end
+      customer.add_to_ledger(amount, *accounts, subscription: self, invoice: invoice)
 
       return invoice
     end

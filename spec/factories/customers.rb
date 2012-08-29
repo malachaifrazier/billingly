@@ -1,7 +1,10 @@
 FactoryGirl.define do
 
 factory :customer, class: Billingly::Customer do
-  customer_since Date.today
+  
+  factory :deactivated_customer do
+    deactivated_debtor_since 10.days.ago
+  end
 end
 
 end

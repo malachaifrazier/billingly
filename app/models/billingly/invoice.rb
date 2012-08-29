@@ -20,20 +20,16 @@ module Billingly
       return if paid?
       return if customer.ledger[:cash] < amount
       receipt = self.create_receipt!(customer: customer, paid_on: Time.now)
+      extra = {receipt: receipt, subscription: subscription}
+
       if subscription.payable_upfront?
-        %w(ioweyou cash services_to_provide).each do |account|
-          receipt.ledger_entries.create!(account: account, customer: customer,
-            subscription: subscription, amount: -(amount))
-        end
-        receipt.ledger_entries.create!(account: 'paid_upfront', customer: customer,
-          subscription: subscription, amount: amount)
+        customer.add_to_ledger(-(amount), :ioweyou, :cash, :services_to_provide, extra)
+        customer.add_to_ledger(amount, :paid_upfront, extra)
       else
-        %w(debt cash).each do |account|
-          receipt.ledger_entries.create!(account: account, customer: customer,
-            subscription: subscription, amount: -(amount))
-        end
+        customer.add_to_ledger(-(amount), :debt, :cash, extra)
       end
-      save!
+
+      save! # save receipt
       return receipt
     end
     
@@ -45,10 +41,9 @@ module Billingly
       return unless paid?
       return unless subscription.payable_upfront
       return if acknowledged_expense?
-      ledger_entries.create!(account: 'paid_upfront', customer: customer,
-        subscription: subscription, amount: -(amount))
-      ledger_entries.create!(account: 'expenses', customer: customer,
-        subscription: subscription, amount: amount)
+      extra = {subscription: subscription, invoice: self}
+      customer.add_to_ledger(-(amount), :paid_upfront, extra)
+      customer.add_to_ledger(amount, :expenses, extra)
       update_attribute(:acknowledged_expense, Time.now)
     end
 

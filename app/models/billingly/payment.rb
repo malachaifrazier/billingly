@@ -11,12 +11,9 @@ module Billingly
     # instead, invoices are deemed as paid whenever the customer's balance
     # is enough to cover them.
     def self.credit_for(customer, amount) 
-      payment = create!(amount: amount, customer: customer)
-      %w(cash income).each do |account|
-        customer.ledger_entries.create!(customer: customer, account:account,
-          payment: payment, amount: amount)
+      create!(amount: amount, customer: customer).tap do |payment|
+        customer.add_to_ledger(amount, :cash, :income, payment: payment)
       end
-      return payment
     end
   end
 end

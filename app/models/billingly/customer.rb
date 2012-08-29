@@ -12,8 +12,6 @@ module Billingly
     has_many :invoices
     has_many :ledger_entries
     
-    attr_accessible :customer_since
-
     # Customers subscribe to the service and perform periodic payments to continue using it.
     # We offer common plans stating how much and how often they should pay, also, if the
     # payment is to be done at the beginning or end of the period (upfront or due-month)
@@ -46,10 +44,24 @@ module Billingly
     def ledger
       ({}).tap do |all|
         ledger_entries.group_by(&:account).collect do |account, entries|
-          all[account.to_sym] = entries.collect(&:amount).collect(&:to_f).inject(0.0) do |sum,item|
+          values = entries.collect(&:amount).collect(&:to_f)
+          all[account.to_sym] = values.inject(0.0) do |sum,item|
             (BigDecimal.new(sum.to_s) + BigDecimal.new(item.to_s)).to_f
           end
         end
+      end
+    end
+    
+    # Shortcut for adding ledger_entries for a particular customer.
+    def add_to_ledger(amount, *accounts, extra)
+      accounts = [] if accounts.nil?
+      unless extra.is_a?(Hash)
+        accounts << extra
+        extra = {}
+      end
+      
+      accounts.each do |account|
+        ledger_entries.create!(extra.merge(amount: amount, account: account.to_s))
       end
     end
     
@@ -58,6 +70,29 @@ module Billingly
       Billingly::Payment.credit_for(self, amount)
       pending = invoices.where(receipt_id: nil).order('period_start ASC').first
       pending.settle unless pending.nil?
+      reactivate_debtor if deactivated_debtor? && pending.amount <= amount
+    end
+    
+    # This class method is run periodically deactivate all customers who have overdue invoices.
+    def self.deactivate_debtors
+       joins(:invoices)
+        .where('invoices.due_on < ?', Time.now)
+        .where(deactivated_debtor_since: nil,
+          invoices: {deleted_on: nil, receipt_id: nil})
+        .update_all(deactivated_debtor_since: Time.now)
+    end
+    
+    # Reactivates a customer that was deactivated when missed a previous payment.
+    # The new subscription is parametrized the same as the old one. The old subscription
+    # is terminated.
+    def reactivate_debtor
+      active_subscription.invoices.last.update_attribute(:deleted_on, Time.now)
+      
+      subscribe_to_plan(active_subscription)
+    end
+    
+    def deactivated_debtor?
+      not deactivated_debtor_since.nil?
     end
   end
 end
