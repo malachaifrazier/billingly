@@ -42,7 +42,7 @@ module Billingly
     # Due to silly rounding errors on sqlite we need to convert decimals to float and then to
     # decimals again. :S
     def ledger
-      ({}).tap do |all|
+      Hash.new(0.0).tap do |all|
         ledger_entries.group_by(&:account).collect do |account, entries|
           values = entries.collect(&:amount).collect(&:to_f)
           all[account.to_sym] = values.inject(0.0) do |sum,item|
@@ -86,9 +86,17 @@ module Billingly
     # The new subscription is parametrized the same as the old one. The old subscription
     # is terminated.
     def reactivate_debtor
-      active_subscription.invoices.last.update_attribute(:deleted_on, Time.now)
-      
-      subscribe_to_plan(active_subscription)
+      old = active_subscription
+      update_attribute(:deactivated_debtor_since, nil)
+      subscribe_to_plan(old)
+      reload
+      new = active_subscription
+      if old.payable_upfront?
+        old.invoices.last.update_attribute(:deleted_on, Time.now)
+        new.invoices.first.settle
+      else
+        old.invoices.where(receipt_id: nil, deleted_on: nil).last.settle
+      end
     end
     
     def deactivated_debtor?

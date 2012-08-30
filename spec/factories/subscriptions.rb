@@ -9,13 +9,33 @@ FactoryGirl.define do
       payable_upfront false
       
       factory :first_month do
-        subscribed_on 1.month.ago
+        subscribed_on Time.now
+
+        trait :overdue do
+          subscribed_on 50.days.ago
+        end
+
+        trait :deactivated do
+          association :customer, factory: :deactivated_customer
+        end
+
+        after :create do |it, _|
+          from = it.subscribed_on
+          to = from + 1.month
+          it.invoices.create!(
+            customer: it.customer,
+            amount: it.amount,
+            period_start: from,
+            period_end: to,
+            due_on: to + 10.days
+         )
+        end
       end
       
       factory :fourth_month do
         subscribed_on 4.month.ago
         after :create do |it, _|
-          (0..2).each do |index|
+          (0..3).each do |index|
             from = it.subscribed_on + index.months
             to = from + 1.month
             it.invoices.create!(

@@ -10,47 +10,46 @@ module Billingly
       not receipt.nil?
     end
     
-    def acknowledged_expense?
-      not acknowledged_expense.nil?
-    end
-    
-    # As customers increase their balance with payments, we check if their balance
-    # is enough to cover the amount of a given invoice and pay for it.
-    def settle
+    # Settle an invoice by moving money from the cash balance into an expense,
+    # generating a receipt and marking the invoice as paid.
+    def charge
       return if paid?
+      return unless deleted_on.nil?
       return if customer.ledger[:cash] < amount
-      receipt = self.create_receipt!(customer: customer, paid_on: Time.now)
-      extra = {receipt: receipt, subscription: subscription}
 
-      if subscription.payable_upfront?
-        customer.add_to_ledger(-(amount), :ioweyou, :cash, :services_to_provide, extra)
-        customer.add_to_ledger(amount, :paid_upfront, extra)
-      else
-        customer.add_to_ledger(-(amount), :debt, :cash, extra)
-      end
+      receipt = create_receipt!(customer: customer, paid_on: Time.now)
+      extra = {receipt: receipt, subscription: subscription}
+      customer.add_to_ledger(-(amount), :cash, extra)
+      customer.add_to_ledger(amount, :expenses, extra)
 
       save! # save receipt
       return receipt
     end
     
-    # Upfront payments are credited to the: paid_upfront account, instead of
-    # going to the regular 'cash' balance. This way we can separate the money
-    # we could potentially refund from the money we actually spent servicing them.
-    def acknowledge_expense
-      return if Time.now < period_end
-      return unless paid?
-      return unless subscription.payable_upfront
-      return if acknowledged_expense?
-      extra = {subscription: subscription, invoice: self}
-      customer.add_to_ledger(-(amount), :paid_upfront, extra)
-      customer.add_to_ledger(amount, :expenses, extra)
-      update_attribute(:acknowledged_expense, Time.now)
+    # When a subscription terminates, it's last invoice gets truncated so that it does
+    # not extend beyond the duration of the subscription.
+    def truncate
+      return if Time.now > self.period_end
+      self.period_end = Time.now
+      old_amount = self.amount
+      self.amount = BigDecimal.new((amount.to_f / 2).round(2).to_s)
+      if paid?
+        reimburse = (old_amount - self.amount).round(2)
+        extra = {invoice: self, subscription: subscription}
+        customer.add_to_ledger(reimburse, :cash, extra)
+        customer.add_to_ledger(-(reimburse), :expenses, extra)
+      end
+      save!
+      self.charge
+      return self
     end
 
-    # This class method is called from a cron job, it acknowledges all the expenses for
-    # invoices that have already been paid.
-    def self.acknowledge_expenses
-      where(acknowledged_expense: nil).each {|invoice| invoice.acknowledge_expense }
+    # Charges all invoices that can be charged from the existing customer cash balances
+    def self.charge_all
+      where(deleted_on: nil, receipt_id: nil).order('period_start').each do |invoice|
+        invoice.charge
+      end
     end
+    
   end
 end

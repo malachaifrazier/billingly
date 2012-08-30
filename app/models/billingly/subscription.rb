@@ -12,7 +12,7 @@ module Billingly
     
     # Invoices will be generated before their due_date, as soon as possible,
     # but not sooner than GENERATE_AHEAD days.
-    GENERATE_AHEAD = 15.days
+    GENERATE_AHEAD = 3.days
 
     # Subscriptions are to be charged periodically. Their periodicity is
     # stored semantically on the database, but we want to convert it
@@ -45,24 +45,27 @@ module Billingly
     # This method is idempotent, if an upcoming invoice for a subscription already exists,
     # it does not create yet another one.
     def generate_next_invoice
-      return if unsubscribed_on
+      return if terminated?
       from = invoices.empty? ? subscribed_on : invoices.last.period_end
       to = from + period_size
       due_on = (payable_upfront ? from : to) + GRACE_PERIOD
-      return unless DateTime.now + GENERATE_AHEAD > due_on
+      return if GENERATE_AHEAD.from_now < from
 
-      invoice = invoices.create!(customer: customer, amount: amount,
+      return invoices.create!(customer: customer, amount: amount,
         due_on: due_on, period_start: from, period_end: to)
-
-      # when generating an upfront invoice the ledger should register a
-      # commitment between the service we will provide and the money we will
-      # receive.
-      # In case of a due-month payment the service was already provide so we 
-      # register a debt and an expense.
-      accounts = payable_upfront ? %w(ioweyou services_to_provide) : %w(expenses debt)
-      customer.add_to_ledger(amount, *accounts, subscription: self, invoice: invoice)
-
-      return invoice
+    end
+    
+    # Terminates this subscription, it could be either because we deactivate a debtor
+    # or because the customer decided to end his subscription on his own terms.
+    def terminate
+      return if terminated?
+      update_attribute(:unsubscribed_on, Time.now)
+      invoices.last.truncate
+      return self
+    end
+    
+    def terminated?
+      not unsubscribed_on.nil?
     end
     
     # This class method is called from a cron job, it creates invoices for all the subscriptions
@@ -73,6 +76,5 @@ module Billingly
         subscription.generate_next_invoice
       end
     end
-    
   end
 end

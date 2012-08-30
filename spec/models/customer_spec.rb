@@ -30,9 +30,13 @@ describe Billingly::Customer do
       customer.ledger[:cash].should == 200.0
       customer.ledger[:income].should == 100.0
     end
+    
+    it 'defaults all accounts on ledger to 0.0' do
+      customer.ledger[:cash].should == 0.0
+    end
   end
   
-  describe 'when subscribing to a plan' do
+  describe 'when first subscribing to a plan' do
     let(:subscription){ customer.subscribe_to_plan(plan) }
 
     subject { subscription }
@@ -45,33 +49,24 @@ describe Billingly::Customer do
       subscription.subscribed_on.to_time.to_s.should == Time.now.utc.to_s
     end
     
-    it 'invoices payable_upfront plans right away' do
+    it 'creates first invoice right away' do
       expect do
         customer.subscribe_to_plan(create(:pro_50_yearly))    
       end.to change{ customer.invoices.count }.by(1)
     end
-
-    it 'does not invoice non payable_upfront plans until later' do
-      expect do
-        customer.subscribe_to_plan(create(:pro_50_monthly))    
-      end.not_to change{ customer.invoices.count }
-    end
   end
   
-  pending 'can not suscribe more than one time to the same plan'
-  pending 'can\'t change to a smaller plan'
-  pending 'generates invoice before changing a plan' 
-  pending 'cannot change plan if debtor'
-
-  it 'when changing plan' do
+  describe 'when changing from one plan to another' do
+    it 'terminates the old subscription' do
+      subscription = create(:first_month)
+      Billingly::Subscription.any_instance.should_receive(:terminate)
+      subscription.customer.subscribe_to_plan(build(:pro_50_yearly))
+    end
+    
+    it 'creates a new subscription starting where the old one terminated' do
       pending
-      Timecop.travel 45.days.ago
-      old = customer.subscribe_to_plan(plan)
-      Timecop.return 
-      new = customer.subscribe_to_plan(build(:pro_50_yearly))
-      old.reload
-      old.unsubscribed_on.to_i.should == new.subscribed_on.to_i
-  end 
+    end
+  end
   
   it 'Settles oldest invoice when receiving a payment' do
     subscription = customer.subscribe_to_plan(create(:pro_50_monthly))
@@ -86,10 +81,6 @@ describe Billingly::Customer do
     Timecop.return
   end
   
-  it 'Does not settle deleted invoices' do
-    pending ''
-  end
-  
   it 'deactivates customers who missed a due-date' do
     subscription = create(:first_year, :overdue)
 
@@ -98,7 +89,7 @@ describe Billingly::Customer do
     subscription.reload
     customer = subscription.customer
     customer.deactivated_debtor_since.utc.to_s.should == Time.now.utc.to_s
-    customer.should be_debtor
+    customer.should be_deactivated_debtor
   end
   
   it 'does not re-deactivate already deactivated customers' do
@@ -119,10 +110,10 @@ describe Billingly::Customer do
     Timecop.travel 2.months.from_now
     Billingly::Customer.deactivate_debtors
     customer.reload
-    customer.should_not be_debtor
+    customer.should_not be_deactivated_debtor
   end
   
-  describe 'when a debtor of a yearly subscription pays' do
+  describe 'when a debtor pays' do
     it 'tries to reactivate if previously deactivated' do
       customer = create(:first_year, :overdue, :deactivated).customer
       customer.should_receive(:reactivate_debtor)
@@ -146,6 +137,7 @@ describe Billingly::Customer do
     before(:each) do
       @old = create(:first_year, :overdue, :deactivated)
       @old.customer.reactivate_debtor
+      @old.reload
       @new = @old.customer.active_subscription
     end
     
@@ -153,26 +145,80 @@ describe Billingly::Customer do
       @old.should_not == @new
     end
     
+    it 're-enables the customer' do
+      @old.customer.should_not be_deactivated_debtor
+    end
+    
     it 'forfeits the old invoice' do
       invoice = @old.invoices.last
       invoice.deleted_on.should_not be_nil
       invoice.receipt.should be_nil
     end
-    
-    it 'creates a new invoice without the grace period used up on the previous one' do
-      invoice = @new.invoices.first
-      invoice.receipt.should_not be_nil
-      inovice.
+  end
+  
+  describe 'when reactivating a debtor of a monthly subscription' do
+    before(:each) do
+      @old = create(:first_month, :overdue, :deactivated)
+      @old.customer.reactivate_debtor
+      @old.reload
+      @new = @old.customer.active_subscription
     end
     
-    pending 'forfeits the old invoice'
-    pending 're-enables the customer'
+    it 'creates a new subscription' do
+      @old.should_not == @new
+    end
+    
+    it 're-enables the customer' do
+      @old.customer.should_not be_deactivated_debtor
+    end
+    
+    it 'pays the last pending invoice from the old subscription' do
+      invoice = @old.invoices.last
+      invoice.deleted_on.should be_nil
+      invoice.receipt.should_not be_nil
+    end
+  end
+
+  describe 'when voluntarily terminating subscription to a monthly plan' do
+    pending 'should terminate last subscription immediately'
+    pending 'should send a prorated invoice immediately'
+    pending 'should tag customer as being unsubscribed'
+    describe 'when terminating while there is still a pending invoice' do
+    end
   end
   
-  describe 'when debtor of a full-month subscription returns' do
-    pending 'ends the old subscription and starts a new one, new subscription should not include the grace period'
-    pending 'charges the old subscription'
-    pending 're-enables the customer'
+  describe 'when voluntarily terminating a subscription to a yearly plan' do
+    pending 'should terminate last subscription immediately'
+    pending 'ledger should balance ioweyou/services_to_provide'
+    describe 'when terminating while there is still a pending invoice' do
+    end
+  end
+
+  describe 'when going from a yearly paid upfront plan to another one' do
+    pending ''
+  end 
+    
+  describe 'when going from a monthly paid due-month plan to another' do
+  end
+    
+  describe 'when going from a yearly plan to a due-month plan' do
   end
   
+  it 'should not let debtors change plans' do
+  end
+  
+  describe 'when reactivating debtors' do
+    it 'should reactivate debtors after they pay their debt' do
+      pending
+    end
+    
+    it 'should not reactivate customers if they still owe invoices' do
+      pending
+    end
+    
+    it 'should not reactivate customers if they left the site on their own terms' do
+      pending
+    end
+  end
+
 end

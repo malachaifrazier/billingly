@@ -5,13 +5,21 @@ end
 
 
 =begin
+Generate invoice:
+  -- Nothing happens
+
+We receive a payment (maybe):
+  a+ cash                           300
+  g+ income                              300
+
+As soon as possible, generates receipt.
+  pe+ expenses                      300
+  a-  cash                               300
+
 Generamos Invoice (1): (period_start, period_end, etc)
   r+ expenses                       200
   p+ debt                                200
 
-Recibimos payment:
-  a+ cash                           300
-  g+ income                              300
 
 ----- Check: debt < cash
   p- debt                           200
