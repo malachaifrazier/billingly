@@ -45,11 +45,10 @@ module Billingly
     end
 
     # Charges all invoices that can be charged from the existing customer cash balances
-    def self.charge_all
-      where(deleted_on: nil, receipt_id: nil).order('period_start').each do |invoice|
+    def self.charge_all(collection = self)
+      collection.where(deleted_on: nil, receipt_id: nil).order('period_start').each do |invoice|
         invoice.charge
       end
     end
-    
   end
 end

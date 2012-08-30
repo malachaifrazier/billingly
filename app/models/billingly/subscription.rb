@@ -51,8 +51,10 @@ module Billingly
       due_on = (payable_upfront ? from : to) + GRACE_PERIOD
       return if GENERATE_AHEAD.from_now < from
 
-      return invoices.create!(customer: customer, amount: amount,
+      invoice = invoices.create!(customer: customer, amount: amount,
         due_on: due_on, period_start: from, period_end: to)
+      invoice.charge
+      return invoice
     end
     
     # Terminates this subscription, it could be either because we deactivate a debtor

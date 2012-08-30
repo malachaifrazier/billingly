@@ -11,10 +11,10 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20120829012044) do
+ActiveRecord::Schema.define(:version => 20120830154038) do
 
   create_table "customers", :force => true do |t|
-    t.datetime "deactivated_debtor_since"
+    t.datetime "deactivated_since"
   end
 
   create_table "invoices", :force => true do |t|

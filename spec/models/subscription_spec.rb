@@ -77,8 +77,9 @@ describe Billingly::Subscription do
       end.not_to change{ subscription.invoices.count }
     end
 
-    it 'does not generate a next invoice if last invoice has been generated already' do
+    it 'should try to charge the newly created invoice right away too' do
       subscription = create(:fourth_month)
+      Billingly::Invoice.any_instance.should_receive(:charge).once
       subscription.generate_next_invoice
       expect do
         subscription.generate_next_invoice.should be_nil
@@ -88,13 +89,12 @@ describe Billingly::Subscription do
   
   it 'sets the right due date for the first yearly upfront invoices' do
     subscription = create(:yearly, subscribed_on: Date.today)
-    first_invoice = subscription.generate_next_invoice
-    first_invoice.due_on.to_date.should ==
+    subscription.generate_next_invoice.due_on.to_date.should ==
         (subscription.subscribed_on.to_date + Billingly::Subscription::GRACE_PERIOD)
   end
 
   it 'sets the right due date for the first monthly due-month invoice' do
-    subscription = create(:first_month)
+    subscription = create(:monthly, subscribed_on: Date.today)
     first_invoice = subscription.generate_next_invoice
     first_invoice.due_on.to_date.should ==
         (subscription.subscribed_on + 1.month + Billingly::Subscription::GRACE_PERIOD).to_date

@@ -46,10 +46,6 @@ describe Billingly::Invoice do
         should_have_ledger_entries(customer, invoice.amount, :expenses, extra)
       end
     end
-    
-    it 'should try to reactivate debtors after successfully charging them' do
-      pending
-    end
   end
   
   describe 'when truncating an invoice' do
@@ -114,6 +110,15 @@ describe Billingly::Invoice do
       end.to change{ Billingly::Invoice.where(receipt_id: nil).count }.by(-2)
     end
     
+    it 'should charge all unpaid invoices for a specific customer' do
+      Billingly::Customer.any_instance.stub(ledger: {cash: 300})
+      3.times{ create(:first_month, customer: create(:customer)) }
+
+      expect do
+        Billingly::Invoice.charge_all(Billingly::Customer.first.invoices)
+      end.to change{ Billingly::Invoice.where(receipt_id: nil).count }.by(-1)
+    end
+    
     it 'should not settle invoice if customer does not have enough money in balance' do
       create(:first_month)
       expect do
@@ -123,10 +128,13 @@ describe Billingly::Invoice do
     
     it 'should settle oldest invoice first' do
       subscription = create(:first_month)
-      subscription.customer.add_to_ledger(10, :cash)
       Timecop.travel 1.month.from_now
       oldest = subscription.invoices.first
       latest = subscription.generate_next_invoice
+
+      # We credit the customer balance after creating the second invoice, because
+      # 'generate_next_invoice' will charge it immediately otherwise.
+      subscription.customer.add_to_ledger(10, :cash)
   
       Billingly::Invoice.charge_all
       oldest.reload
@@ -134,6 +142,7 @@ describe Billingly::Invoice do
 
       latest.reload
       latest.should_not be_paid
+      Timecop.return
     end
   end
 end

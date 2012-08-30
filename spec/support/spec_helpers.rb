@@ -31,5 +31,17 @@ module SpecHelpers
       entry.amount.to_f.should == amount.to_f
     end
   end
-    
+  
+  def days_go_by(days=1)
+    do_all = lambda do
+      Billingly::Subscription.generate_next_invoices
+      Billingly::Invoice.charge_all
+      Billingly::Customer.deactivate_all_debtors
+    end
+    do_all.call
+    Timecop.travel (days/2).days.from_now
+    do_all.call
+    Timecop.travel (days/2).days.from_now
+    do_all.call
+  end
 end

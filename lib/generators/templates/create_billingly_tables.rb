@@ -1,7 +1,7 @@
 class CreateBillinglyTables < ActiveRecord::Migration
   def self.up
     create_table :customers do |t|
-      t.datetime 'deactivated_debtor_since'
+      t.datetime 'deactivated_since'
     end
     
     create_table :invoices do |t|
