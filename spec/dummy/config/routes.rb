@@ -1,4 +1,6 @@
 Dummy::Application.routes.draw do
+  mount Billingly::Engine => '/billingly'
+  #match 'show' => 'billingly/subscriptions#show'
   # The priority is based upon order of creation:
   # first created -> highest priority.
 

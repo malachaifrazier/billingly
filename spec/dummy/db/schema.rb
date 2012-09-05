@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20120904232413) do
+ActiveRecord::Schema.define(:version => 20120905212012) do
 
   create_table "billingly_customers", :force => true do |t|
     t.datetime "deactivated_since"
