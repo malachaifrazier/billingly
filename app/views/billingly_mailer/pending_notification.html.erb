@@ -1,0 +1,17 @@
+<%=t 'billingly.invoice_number' %>: <%= '%.10i' % @invoice.id %>
+
+<%=t 'billingly.due_date' %>: <%= @invoice.due_on.to_date %>
+
+<%= "#{t('billingly.covering_from')} #{@invoice.period_start.to_date} #{t('billingly.until')} #{@invoice.period_end.to_date}" %>
+
+<%=t 'billingly.detail' %>
+<%= '-' * 70 %>
+<%= '%-55s%15s' % [@invoice.subscription.description, "$#{@invoice.amount} USD"] %>
+<% if @cash > 0 %>
+<%= '%-55s%15s' % [t('billingly.balance_in_your_favour'), "-$#{@cash} USD"] %>
+<% end %>
+
+<%= '%-55s%15s' % [t('billingly.you_should_pay'), "$#{@invoice.amount - @cash} USD"] %>
+
+<%=t 'billingly.you_can_pay_this_invoice_by_visiting' %> http://payments_page
+

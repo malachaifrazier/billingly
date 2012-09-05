@@ -5,12 +5,17 @@
 #   * Invoices are generated periodically calculating charges a Customer incurred in.
 #   * Receipts are sent to Customers when their invoices are paid.
 
+require 'validates_email_format_of'
+
 module Billingly
   class Customer < ActiveRecord::Base
     has_many :subscriptions
     has_many :one_time_charges
     has_many :invoices
     has_many :ledger_entries
+    
+    attr_accessible :email
+    validates_email_format_of :email
     
     # Customers subscribe to the service and perform periodic payments to continue using it.
     # We offer common plans stating how much and how often they should pay, also, if the
@@ -73,8 +78,8 @@ module Billingly
     
     def self.debtors
        joins(:invoices).readonly(false)
-        .where('invoices.due_on < ?', Time.now)
-        .where(invoices: {deleted_on: nil, receipt_id: nil})
+        .where("#{Billingly::Invoice.table_name}.due_on < ?", Time.now)
+        .where(billingly_invoices: {deleted_on: nil, receipt_id: nil})
     end
 
     # Credits a payment for a customer, settling invoices if possible.

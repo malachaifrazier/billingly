@@ -131,7 +131,5 @@ describe Billingly::Subscription do
     expect do
       Billingly::Subscription.generate_next_invoices
     end.to change{ Billingly::Invoice.count }.by(2)
-
-    Timecop.return
   end
 end

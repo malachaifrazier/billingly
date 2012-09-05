@@ -15,12 +15,12 @@ describe 'SubscriptionLifecycle' do
       customer.subscribe_to_plan(build(:pro_50_yearly))
       days_go_by 3
       customer.credit_payment(100.0)
-      assert_ledger customer, cash: 0.01, income: 100.0, expenses: 99.99
+      assert_ledger customer, cash: 0.01, paid: 100.0, spent: 99.99
 
       days_go_by 365
       customer.credit_payment(100.0)
       
-      assert_ledger customer, cash: 0.02, income: 200.0, expenses: 199.98
+      assert_ledger customer, cash: 0.02, paid: 200.0, spent: 199.98
       customer.should_not be_deactivated
       customer.should_not be_debtor
     end
@@ -36,7 +36,7 @@ describe 'SubscriptionLifecycle' do
       customer.should_not be_deactivated
       customer.should_not be_debtor
       customer.credit_payment(10.0)
-      assert_ledger customer, cash: 0.1, income: 10.0, expenses: 9.9
+      assert_ledger customer, cash: 0.1, paid: 10.0, spent: 9.9
 
       days_go_by 50
       customer.reload
@@ -52,11 +52,11 @@ describe 'SubscriptionLifecycle' do
       customer.subscribe_to_plan(build(:pro_50_yearly))
       
       # The last invoice for the last plan should have been prorated
-      assert_ledger customer, cash: 5.05, income: 10.0, expenses: 4.95
+      assert_ledger customer, cash: 2.08, paid: 10.0, spent: 7.92
 
       days_go_by 5
       customer.credit_payment(100.0)
-      assert_ledger customer, cash: 5.06, income: 110.0, expenses: 104.94
+      assert_ledger customer, cash: 2.09, paid: 110.0, spent: 107.91
     end
     
     it 'Customer leaves the site before paying their last invoice, which was not due yet' do

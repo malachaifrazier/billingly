@@ -1,0 +1,23 @@
+en:
+  billingly:
+    your_account_was_suspended: Your account was suspended
+    your_invoice_is_available: Your invoice is available
+    payment_receipt: Payment Receipt
+    invoice_number: Invoice Number
+    covering_from: For period starting on
+    until: until
+    due_date: Due Date
+    detail: Detail
+    balance_in_your_favour: Balance in your favour
+    you_should_pay: You should pay
+    you_can_pay_this_invoice_by_visiting: You can pay this invoice by visiting
+    you_can_reactivate_your_account_by_visiting: You can reactivate your account by visiting
+    make_sure_to_pay:
+      Your account was suspended. Make sure to pay your overdue invoices to reactivate it.
+    your_overdue_invoice_is_detailed_below: Your overdue invoice is detailed below
+    receipt_greeting: Dear customer
+    receipt_text:
+      "This is a receipt for your subscription.\nThis is only a receipt, no payment is due.\nThank you for your business!"
+    paid_on: Paid on
+    plan: Plan
+    amount: Amount

@@ -11,28 +11,31 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20120830154038) do
+ActiveRecord::Schema.define(:version => 20120904232413) do
 
-  create_table "customers", :force => true do |t|
+  create_table "billingly_customers", :force => true do |t|
     t.datetime "deactivated_since"
+    t.string   "email",             :null => false
   end
 
-  create_table "invoices", :force => true do |t|
-    t.integer  "customer_id",                                                          :null => false
+  create_table "billingly_invoices", :force => true do |t|
+    t.integer  "customer_id",                                                         :null => false
     t.integer  "receipt_id"
     t.integer  "subscription_id"
-    t.decimal  "amount",               :precision => 11, :scale => 2, :default => 0.0, :null => false
-    t.datetime "due_on",                                                               :null => false
-    t.datetime "period_start",                                                         :null => false
-    t.datetime "period_end",                                                           :null => false
+    t.decimal  "amount",              :precision => 11, :scale => 2, :default => 0.0, :null => false
+    t.datetime "due_on",                                                              :null => false
+    t.datetime "period_start",                                                        :null => false
+    t.datetime "period_end",                                                          :null => false
     t.datetime "deleted_on"
+    t.datetime "notified_pending_on"
+    t.datetime "notified_overdue_on"
+    t.datetime "notified_paid_on"
     t.text     "comment"
-    t.datetime "acknowledged_expense"
-    t.datetime "created_at",                                                           :null => false
-    t.datetime "updated_at",                                                           :null => false
+    t.datetime "created_at",                                                          :null => false
+    t.datetime "updated_at",                                                          :null => false
   end
 
-  create_table "ledger_entries", :force => true do |t|
+  create_table "billingly_ledger_entries", :force => true do |t|
     t.integer  "customer_id",                                                     :null => false
     t.string   "account",                                                         :null => false
     t.decimal  "amount",          :precision => 11, :scale => 2, :default => 0.0, :null => false
@@ -44,12 +47,12 @@ ActiveRecord::Schema.define(:version => 20120830154038) do
     t.datetime "updated_at",                                                      :null => false
   end
 
-  create_table "payments", :force => true do |t|
+  create_table "billingly_payments", :force => true do |t|
     t.integer "customer_id",                                                 :null => false
     t.decimal "amount",      :precision => 11, :scale => 2, :default => 0.0, :null => false
   end
 
-  create_table "plans", :force => true do |t|
+  create_table "billingly_plans", :force => true do |t|
     t.string   "name"
     t.string   "description"
     t.string   "periodicity"
@@ -59,14 +62,14 @@ ActiveRecord::Schema.define(:version => 20120830154038) do
     t.datetime "updated_at",                                                      :null => false
   end
 
-  create_table "receipts", :force => true do |t|
+  create_table "billingly_receipts", :force => true do |t|
     t.integer  "customer_id", :null => false
     t.datetime "paid_on"
     t.datetime "created_at",  :null => false
     t.datetime "updated_at",  :null => false
   end
 
-  create_table "subscriptions", :force => true do |t|
+  create_table "billingly_subscriptions", :force => true do |t|
     t.integer  "customer_id",                                                       :null => false
     t.string   "description",                                                       :null => false
     t.datetime "subscribed_on",                                                     :null => false

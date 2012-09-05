@@ -5,6 +5,11 @@ describe Billingly::Customer do
   let(:customer){ create(:customer) }
   
   describe 'when editing the customer ledger entries' do
+    it 'validates email' do
+      customer.should be_valid
+      build(:customer, email: 'blabalabl').should_not be_valid
+    end
+
     it 'has a shortcut for writing ledger entries' do
       expect do
         customer.add_to_ledger(200.0, :cash)
@@ -19,7 +24,7 @@ describe Billingly::Customer do
     it 'can write ledger entries for several accounts at once' do
       invoice = create(:first_year, customer: customer).invoices.last
       expect do
-        customer.add_to_ledger(200.0, :cash, :income, invoice: invoice)
+        customer.add_to_ledger(200.0, :cash, :paid, invoice: invoice)
       end.to change{ Billingly::LedgerEntry.count }.by(2)
       invoice.reload
       invoice.ledger_entries.count.should == 2
@@ -27,9 +32,9 @@ describe Billingly::Customer do
 
     it 'has a reader for the whole ledger' do
       customer.add_to_ledger(100.0, :cash)
-      customer.add_to_ledger(100.0, :cash, :income)
+      customer.add_to_ledger(100.0, :cash, :paid)
       customer.ledger[:cash].should == 200.0
-      customer.ledger[:income].should == 100.0
+      customer.ledger[:paid].should == 100.0
     end
     
     it 'defaults all accounts on ledger to 0.0' do
@@ -48,6 +53,10 @@ describe Billingly::Customer do
     
     it 'Makes subscription immediate' do
       subscription.subscribed_on.to_time.to_s.should == Time.now.utc.to_s
+    end
+    
+    it 'Can suscribe to a future date' do
+      # To provide for a trial period
     end
     
     it 'creates first invoice right away' do

@@ -37,11 +37,24 @@ module SpecHelpers
       Billingly::Subscription.generate_next_invoices
       Billingly::Invoice.charge_all
       Billingly::Customer.deactivate_all_debtors
+      Billingly::Invoice.notify_all_paid
+      Billingly::Invoice.notify_all_pending
+      Billingly::Invoice.notify_all_overdue
     end
     do_all.call
     Timecop.travel (days/2).days.from_now
     do_all.call
     Timecop.travel (days/2).days.from_now
     do_all.call
+  end
+  
+  def should_email(email_method)
+    BillinglyMailer.should_receive(email_method) do |arg|
+      double(deliver!: true)
+    end
+  end
+
+  def should_not_email(email_method)
+    BillinglyMailer.should_not_receive(email_method)
   end
 end

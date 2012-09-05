@@ -7,7 +7,7 @@ describe Billingly::Payment do
     should_add_to_ledger(customer, 2) do
       payment = Billingly::Payment.credit_for(customer, amount)
       payment.amount.should == payment.amount
-      should_have_ledger_entries(customer, amount, :cash, :income, payment: payment)
+      should_have_ledger_entries(customer, amount, :cash, :paid, payment: payment)
     end
   end
 end
