@@ -1,3 +1,3 @@
 Billingly::Engine.routes.draw do
-  resource :subscriptions, only: [:show]
+  resource :subscriptions, only: [:new, :create]
 end
