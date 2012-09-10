@@ -1,8 +1,8 @@
 # This file is copied to spec/ when you run 'rails generate rspec:install'
 ENV["RAILS_ENV"] ||= 'test'
 require_relative 'dummy/config/environment'
-require 'rspec/rails'
 require 'rspec/autorun'
+require 'rspec/rails'
 require 'factory_girl_rails'
 require 'timecop'
 

@@ -1,4 +1,6 @@
 class BillinglyMailer < ActionMailer::Base
+  default from: 'example@example.com'
+
   def pending_notification(invoice)
     @invoice = invoice
     @cash = invoice.customer.ledger[:cash]

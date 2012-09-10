@@ -1,6 +1,11 @@
 Dummy::Application.routes.draw do
-  mount Billingly::Engine => '/billingly'
+  #mount Billingly::Engine => '/billingly'
   #match 'show' => 'billingly/subscriptions#show'
+
+  add_billingly_routes
+  
+  add_billingly_routes 'namespaced_billingly'
+
   # The priority is based upon order of creation:
   # first created -> highest priority.
 
@@ -50,7 +55,7 @@ Dummy::Application.routes.draw do
 
   # You can have the root of your site routed with "root"
   # just remember to delete public/index.html.
-  # root :to => 'welcome#index'
+  root :to => 'welcome#index'
 
   # See how all your routes lay out with "rake routes"
 

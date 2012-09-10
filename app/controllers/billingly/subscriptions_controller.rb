@@ -1,29 +1,48 @@
 # This controller takes care of managing subscriptions.
-class Billingly::SubscriptionsController < ApplicationController
-  before_filter :requires_customer
+class Billingly::SubscriptionsController < ::ApplicationController
+  before_filter :requires_customer, only: [:index, :reactivate]
+  before_filter :requires_active_customer, except: [:index, :reactivate]
+
+  # Index shows the current subscription to customers while they are active.
+  # It's also the page that prompts them to reactivate their account when deactivated.
+  # It's likely the only reachable page for deactivated customers.
+  def index
+    @subscription = current_customer.active_subscription
+    redirect_to(action: :new) unless @subscription
+  end
   
+  # Should let customers choose a plan to subscribe to, wheter they are subscribing
+  # for the first time or upgrading their plan.
   def new
     @plans = Billingly::Plan.all
   end
 
+  # Subscribe the customer to a plan, or change his current plan.
   def create
     plan = Billingly::Plan.find(params[:plan_id])
-    subscription = current_customer.subscribe_to_plan(plan)
-    on_subscription_success(subscription)
+    current_customer.subscribe_to_plan(plan)
+    on_subscription_success
   end
 
-  def requires_customer
-    on_empty_customer if current_customer.nil? 
+  # Action to reactivate an account for a customer that left voluntarily and does
+  # not owe any money to us.
+  # Their account will be reactivated to their old subscription plan immediately.
+  # They can change plans afterwards.
+  def reactivate
+    return render nothing: true, status: 403 unless current_customer.reactivate
+    on_reactivation_success
+  end
+
+  # When a subscription is sucessful this callback is triggered.
+  # Host applications should override it by subclassing this subscriptionscontroller,
+  # and include their own behaviour, and for example grant the privileges associated
+  # to the subscription plan.
+  def on_subscription_success
+    redirect_to(action: :index) 
   end
   
-  # This method is call on a before filter when a customer was required
-  # but none was found. It's reccommended that this method redirects to
-  # a login url or out of the site.
-  def on_empty_customer
-    redirect_to(root_path)
+  def on_reactivation_success
+    on_subscription_success
   end
-
-  def on_subscription_success(subscription)
-    redirect_to(:show) 
-  end
+  
 end

@@ -71,8 +71,6 @@ module Billingly
     
     # This class method is run periodically deactivate all customers who have overdue invoices.
     def self.deactivate_all_debtors
-     # debugger
-      
       debtors.where(deactivated_since: nil).all.each{|debtor| debtor.deactivate }
     end
     
