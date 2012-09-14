@@ -1,5 +1,5 @@
 class CreateBillinglyTables < ActiveRecord::Migration
-  def self.up
+  def change
     create_table :billingly_customers do |t|
       t.datetime 'deactivated_since'
       t.string 'email', null: false
@@ -7,9 +7,9 @@ class CreateBillinglyTables < ActiveRecord::Migration
     
     create_table :billingly_invoices do |t|
       t.references :customer, null: false
-      t.references :receipt
       t.references :subscription
       t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false
+      t.datetime 'paid_on'
       t.datetime 'due_on', null: false
       t.datetime 'period_start', null: false
       t.datetime 'period_end', null: false
@@ -26,31 +26,25 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false
     end
     
-    create_table :billingly_receipts do |t|
-      t.references :customer, null: false
-      t.datetime 'paid_on'
-      t.timestamps
-    end
-
-    create_table :billingly_ledger_entries do |t|
+    create_table :billingly_journal_entries do |t|
       t.references :customer, null: false
       t.string :account, null: false
       t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false
       t.references :subscription
       t.references :invoice
       t.references :payment
-      t.references :receipt
       t.timestamps
     end
     
     create_table :billingly_subscriptions do |t|
       t.references :customer, null: false
       t.string 'description', null: false
+      t.string 'plan_code', null: false
       t.datetime 'subscribed_on', null: false
       t.string 'periodicity', null: false
+      t.boolean 'payable_upfront', null: false, default: false
       t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false
       t.datetime 'unsubscribed_on'
-      t.boolean 'payable_upfront', null: false, default: false
       t.timestamps
     end
     
@@ -59,13 +53,10 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.string 'description' # 50GB for 9,99 a month.
       t.string 'periodicity'
       t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false # 9.99
-      t.boolean 'payable_upfront' # true
+      t.string 'plan_code', null: false
+      t.boolean 'payable_upfront', null: false
       t.timestamps
     end
-      
-  end
-  
-  def self.down
   end
 end
 

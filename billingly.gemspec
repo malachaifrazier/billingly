@@ -7,11 +7,11 @@ require 'billingly/version'
 Gem::Specification.new do |s|
   s.name        = 'billingly'
   s.version     = Billingly::VERSION
-  s.authors     = ["TODO: Your name"]
-  s.email       = ["TODO: Your email"]
-  s.homepage    = "TODO"
-  s.summary     = "TODO: Summary of RailsSubscriptionBilling."
-  s.description = "TODO: Description of RailsSubscriptionBilling."
+  s.authors     = ['Nubis']
+  s.email       = ['nubis@woobiz.com.ar']
+  s.homepage    = ""
+  s.summary     = "Engine for subscriptions billing - still alpha - contact me if you want to use it"
+  s.description = "Engine for subscriptions billing - still alpha - contact me if you want to use it"
 
   s.files = Dir["{app,config,db,lib}/**/*"] + ["MIT-LICENSE", "Rakefile", "README.rdoc"]
 

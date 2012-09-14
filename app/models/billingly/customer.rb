@@ -1,19 +1,26 @@
-# A Customer is the main entity of Billingly:
-#   * Customers are subscribed to plans
-#   * Customers are charged for one-time expenses.
-#   * Payments are received on a Customer's behalf and credited to their account.
-#   * Invoices are generated periodically calculating charges a Customer incurred in.
-#   * Receipts are sent to Customers when their invoices are paid.
-
 require 'validates_email_format_of'
 
 module Billingly
+
+  # A {Customer} is Billingly's main actor.
+  # * Customers have a {Subscription} to your service which entitles them to use it.
+  # * Customers are {Invoice invoiced} regularly to pay for their {Subscription}
+  # * {Payment Payments} are received on a {Customer}s behalf and credited to their account.
+  # * Payments are received on a Customer's behalf and credited to their account.
+  # * Invoices are generated periodically calculating charges a Customer incurred in.
+  # * Receipts are sent to Customers when their invoices are paid.
   class Customer < ActiveRecord::Base
+
+    # @!attribute email
+    #   @return [String] Used as contact address, format validated but not checked for uniqueness.
+    
+    # @!attribute subscription
+    #   @return [[Subscription]] All subscriptions this customer was ever subscribed to.
     has_many :subscriptions
-    has_many :one_time_charges
+
     has_many :invoices
     has_many :ledger_entries
-    
+
     attr_accessible :email
     validates_email_format_of :email
     
@@ -21,7 +28,10 @@ module Billingly
     # We offer common plans stating how much and how often they should pay, also, if the
     # payment is to be done at the beginning or end of the period (upfront or due-month)
     # Every customer can potentially get a special deal, but we offer common
-    # deals as 'plans' from which a proper subscription is created.
+    # deals as {Plan Plans} from which a proper {Subscription} is created.
+    # A {Subscription} is also an acceptable argument, in that case the new one
+    # will maintain all the characteristics of that one, except the starting date.
+    # @param [Plan, Subscription] If 
     def subscribe_to_plan(plan) 
       subscriptions.last.terminate if subscriptions.last
 

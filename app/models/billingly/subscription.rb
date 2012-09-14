@@ -1,4 +1,17 @@
 module Billingly
+  
+  # A customer will always have at least one subscription to your application.
+  # Everytime there is a change in a {Customer customer's} subscription, the current one
+  # is terminated immediately and a new one is created.
+  #
+  # For example, changing a {Plan} consists on terminating the current
+  # subscription and creating a new one for the new plan.
+  # Also, a new subscription is created when {Customer customers} reactivate their accounts
+  # after being deactivated.
+  #
+  # The most recent subscription is the one currently being charged for, unless the customer
+  # is deactivated at the moment, in which case the last subscription should not be considered
+  # to be active.
   class Subscription < ActiveRecord::Base
     has_many :ledger_entries
     # If a subscription is payable_upfront, then the customer effectively owes us
