@@ -5,6 +5,7 @@ factory :customer, class: Billingly::Customer do
   
   factory :deactivated_customer do
     deactivated_since 10.days.ago
+    deactivation_reason :debtor
   end
 end
 

@@ -69,6 +69,12 @@ describe Billingly::SubscriptionsController do
         post :create, plan_id: 'blah'
       end.to raise_exception ActiveRecord::RecordNotFound
     end
+  
+    it 'should set the diactivation reason to be left_voluntarily' do
+      customer.should_receive(:deactivate_left_voluntarily)
+      post :deactivate
+      response.should redirect_to(action: :index)
+    end
   end
   
   describe 'when reactivating an inactive account' do

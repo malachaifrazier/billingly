@@ -1,5 +1,6 @@
 module Billingly
-  
+  require 'has_duration'
+ 
   # A customer will always have at least one subscription to your application.
   # Everytime there is a change in a {Customer customer's} subscription, the current one
   # is terminated immediately and a new one is created.
@@ -14,44 +15,53 @@ module Billingly
   # to be active.
   class Subscription < ActiveRecord::Base
     has_many :ledger_entries
+
+    # The date in which this subscription started.
+    # This subscription's first invoice will have it's period_start date
+    # matching the date in which the subscription started.
+    # @property subscribed_on
+    # @return [DateTime]
+    validates :subscribed_on, presence: true
+
+    # The grace period we use when calculating an invoices due date.
     # If a subscription is payable_upfront, then the customer effectively owes us
     # since the day in which a given period starts.
     # If a subscription is payable on 'due-month', then the customer effectively
     # owes us money since the date in which a given period ended.
     # When we invoice for a given period we will set the due_date a few days
     # ahead of the date in which the debt was made effective, we call this
-    # a GRACE_PERIOD.
-    GRACE_PERIOD = 10.days
+    # a grace_period.
+    # @property grace_period
+    # @return [ActiveSupport::Duration] It's what you get by doing '1.month', '10.days', etc.
+    has_duration :grace_period
+    validates :grace_period, presence: true
     
+    # A subscription can be a free trial, ending on the date stored in `is_trial_expiring_on'.
+    # Free trial subscriptions don't have {Invoice invoices}. The {Customer customer} is required
+    # to subscribe to a non-trial plan before the trial subscription expires.
+    #
+    # The {#trial?} convenience method returns wheter this subscription is a trial or not.
+    #
+    # @property is_trial_expiring_on
+    # @return [DateTime] 
+    
+    # (see #is_trial_expiring_on)
+    # @property trial?
+    # @return [Boolean]
+    def trial?
+      not is_trial_expiring_on.nil?
+    end
+
     # Invoices will be generated before their due_date, as soon as possible,
     # but not sooner than GENERATE_AHEAD days.
     GENERATE_AHEAD = 3.days
 
-    # Subscriptions are to be charged periodically. Their periodicity is
-    # stored semantically on the database, but we want to convert it
-    # to actual ruby time ranges to do date arithmetic.
-    PERIODICITIES = {'monthly' => 1.month, 'yearly' => 1.year}
-
     belongs_to :customer
     has_many :invoices
    
-    validates :periodicity, inclusion: PERIODICITIES.keys
+    has_duration :periodicity
+    validates :periodicity, presence: true
 
-    # The periodicity can be set using a symbol, for convenience.
-    # It's still a string under the hood.
-    def periodicity=(value)
-      self[:periodicity] = value.to_s if value
-    end
-    
-    def period_size
-      case periodicity
-      when 'monthly' then 1.month
-      when 'yearly' then 1.year
-      else
-        raise ArgumentError.new 'Cannot get period size without periodicity'
-      end 
-    end
-    
     # The invoice generation process should run frequently, at least on a daily basis.
     # It will create invoices some time before they are due, to give customers a chance
     # to pay and settle them.
@@ -59,9 +69,10 @@ module Billingly
     # it does not create yet another one.
     def generate_next_invoice
       return if terminated?
+      return if trial?
       from = invoices.empty? ? subscribed_on : invoices.last.period_end
-      to = from + period_size
-      due_on = (payable_upfront ? from : to) + GRACE_PERIOD
+      to = from + periodicity
+      due_on = (payable_upfront ? from : to) + grace_period
       return if GENERATE_AHEAD.from_now < from
 
       invoice = invoices.create!(customer: customer, amount: amount,
@@ -75,7 +86,7 @@ module Billingly
     def terminate
       return if terminated?
       update_attribute(:unsubscribed_on, Time.now)
-      invoices.last.truncate
+      invoices.last.truncate unless trial?
       return self
     end
     
@@ -87,7 +98,7 @@ module Billingly
     # that still need their invoice created.
     # TODO: This goes through all the active subscriptions, make it smarter so that the batch job runs quicker.
     def self.generate_next_invoices
-      where(unsubscribed_on: nil).each do |subscription|
+      where(is_trial_expiring_on: nil, unsubscribed_on: nil).each do |subscription|
         subscription.generate_next_invoice
       end
     end

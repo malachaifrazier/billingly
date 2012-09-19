@@ -74,5 +74,12 @@ describe 'SubscriptionLifecycle' do
     it 'Customer who was disabled pays her debt but re-joins to a different' do
       pending
     end
+  
+    it 'Customer signs up for a trial and upgrades before trial ends' do
+      pending
+    end
+    
+    it 'Customer signs up for a trial and upgrades after trial ends' do
+    end
   end
 end

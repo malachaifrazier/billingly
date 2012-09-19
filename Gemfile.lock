@@ -2,7 +2,8 @@ PATH
   remote: .
   specs:
     billingly (0.0.0)
-      rails (~> 3.2)
+      has_duration
+      rails (~> 3.2.0)
       validates_email_format_of
 
 GEM
@@ -44,6 +45,8 @@ GEM
     factory_girl_rails (4.0.0)
       factory_girl (~> 4.0.0)
       railties (>= 3.0.0)
+    has_duration (0.0.1)
+      rails (~> 3.2.8)
     hike (1.2.1)
     i18n (0.6.0)
     journey (1.0.4)

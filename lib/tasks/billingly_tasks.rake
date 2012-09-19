@@ -11,6 +11,8 @@ namespace :billingly do
     Billingly::Invoice.charge_all
     puts 'Deactivating debtors'
     Billingly::Customer.deactivate_all_debtors
+    puts 'Deactivating all expired trials'
+    Billingly::Customer.deactivate_all_expired_trials
     puts 'Sending payment receipts'
     Billingly::Invoice.notify_all_paid
     puts 'Notifying pending invoices'

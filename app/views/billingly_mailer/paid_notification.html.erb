@@ -4,7 +4,7 @@
 
 <%= '-' * 70 %>
 <%=t 'billingly.invoice_number' %>: <%= '%.10i' % @invoice.id %>
-<%=t 'billingly.paid_on' %>: <%= @invoice.receipt.paid_on.to_date %>
+<%=t 'billingly.paid_on' %>: <%= @invoice.paid_on.to_date %>
 <%=t 'billingly.plan' %>: <%= @invoice.subscription.description %>
 <%=t 'billingly.amount' %>: $<%= @invoice.amount %> USD
 

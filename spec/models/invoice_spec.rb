@@ -3,18 +3,18 @@ require 'spec_helper'
 describe Billingly::Invoice do
   let(:invoice){ create(:fourth_month).invoices.last }
   
-  it 'is deemed paid when there is a receipt associated to it' do
+  it 'is deemed paid when there is paid_on date' do
     invoice.should_not be_paid
-    invoice.create_receipt(customer: invoice.customer, paid_on: Time.now)
+    invoice.update_attribute(:paid_on, Time.now)
     invoice.should be_paid
   end
   
   describe 'when charging an invoice' do
-    it 'generates a receipt' do
+    it 'Sets the date in which the invoice was paid' do
       Billingly::Customer.any_instance.stub(ledger: {cash: 500})
-      invoice.receipt.should be_nil
+      invoice.paid_on.should be_nil
       invoice.charge.should_not be_nil
-      invoice.receipt.should_not be_nil
+      invoice.paid_on.should_not be_nil
     end
     
     it 'does not attempt to charge if already charged' do
@@ -39,17 +39,21 @@ describe Billingly::Invoice do
     it 'increases expenses and reduces the cash balance when charging' do
       Billingly::Customer.any_instance.stub(ledger: {cash: 200})
       customer = invoice.customer
-      should_add_to_ledger(customer, 2) do
-        receipt = invoice.charge
-        extra = {receipt: receipt, subscription: invoice.subscription}
-        should_have_ledger_entries(customer, -(invoice.amount), :cash, extra)
-        should_have_ledger_entries(customer, invoice.amount, :spent, extra)
+      should_add_to_journal(customer, 2) do
+        invoice.charge
+        extra = {invoice: invoice, subscription: invoice.subscription}
+        should_have_journal_entries(customer, -(invoice.amount), :cash, extra)
+        should_have_journal_entries(customer, invoice.amount, :spent, extra)
       end
     end
     
     it 'does not charge invoices if their starting period has not started yet' do
+      Billingly::Customer.any_instance.stub(ledger: {cash: 500})
+      invoice
+      Timecop.travel invoice.period_start - 10.days
+      invoice.charge.should be_nil
+      invoice.should_not be_paid
     end
-
   end
   
   describe 'when truncating an invoice' do
@@ -68,16 +72,15 @@ describe Billingly::Invoice do
       end
 
       it 'reimburses money to the user balance if already paid' do
-        Timecop.travel Date.today
         customer = invoice.customer
-        customer.add_to_ledger(100.0, :cash, :paid)
-        receipt = invoice.charge
+        customer.add_to_journal(100.0, :cash, :paid)
+        invoice.charge
         Timecop.travel 3.months.from_now.to_date
-        should_add_to_ledger(customer, 2) do
+        should_add_to_journal(customer, 2) do
           invoice.truncate
           extra = {invoice: invoice, subscription: invoice.subscription}
-          should_have_ledger_entries(customer, -75.1, :spent, extra)
-          should_have_ledger_entries(customer, 75.1, :cash, extra)
+          should_have_journal_entries(customer, -75.1, :spent, extra)
+          should_have_journal_entries(customer, 75.1, :cash, extra)
         end
       end
     end
@@ -85,16 +88,17 @@ describe Billingly::Invoice do
     describe 'when reimbursing an invoice covering a period that has not started yet' do
       it 'reimburses the whole invoice if it was paid and its start date is in the future' do
         customer = invoice.customer
-        customer.add_to_ledger(100.0, :cash, :paid)
-        receipt = invoice.charge
+        customer.add_to_journal(100.0, :cash, :paid)
+        invoice.charge
         Timecop.travel 2.days.ago
-        should_add_to_ledger(customer, 2) do
+        should_add_to_journal(customer, 2) do
           invoice.truncate
           extra = {invoice: invoice, subscription: invoice.subscription}
-          should_have_ledger_entries(customer, -99.99, :spent, extra)
-          should_have_ledger_entries(customer, 99.99, :cash, extra)
+          should_have_journal_entries(customer, -99.99, :spent, extra)
+          should_have_journal_entries(customer, 99.99, :cash, extra)
         end
       end
+
       it 'makes the amount 0 dollars' do
         Timecop.travel 2.days.ago
         invoice.truncate
@@ -109,7 +113,7 @@ describe Billingly::Invoice do
       expect do
         invoice.truncate
         customer.reload
-      end.not_to change{ customer.ledger_entries.count }
+      end.not_to change{ customer.journal_entries.count }
     end
     
     it 'charges the new amount, will fail if already paid' do
@@ -131,7 +135,7 @@ describe Billingly::Invoice do
 
       expect do
         Billingly::Invoice.charge_all
-      end.to change{ Billingly::Invoice.where(receipt_id: nil).count }.by(-2)
+      end.to change{ Billingly::Invoice.where(paid_on: nil).count }.by(-2)
     end
     
     it 'should charge all unpaid invoices for a specific customer' do
@@ -140,14 +144,14 @@ describe Billingly::Invoice do
 
       expect do
         Billingly::Invoice.charge_all(Billingly::Customer.first.invoices)
-      end.to change{ Billingly::Invoice.where(receipt_id: nil).count }.by(-1)
+      end.to change{ Billingly::Invoice.where(paid_on: nil).count }.by(-1)
     end
     
     it 'should not settle invoice if customer does not have enough money in balance' do
       create(:first_month)
       expect do
         Billingly::Invoice.charge_all
-      end.not_to change{ Billingly::Invoice.where(receipt_id: nil).count }
+      end.not_to change{ Billingly::Invoice.where(paid_on: nil).count }
     end
     
     it 'should settle oldest invoice first' do
@@ -158,7 +162,7 @@ describe Billingly::Invoice do
 
       # We credit the customer balance after creating the second invoice, because
       # 'generate_next_invoice' will charge it immediately otherwise.
-      subscription.customer.add_to_ledger(10, :cash)
+      subscription.customer.add_to_journal(10, :cash)
   
       Billingly::Invoice.charge_all
       oldest.reload
@@ -213,7 +217,7 @@ describe Billingly::Invoice do
       invoice.reload
       invoice.notified_pending_on.should_not be_nil
       Billingly::Invoice
-        .where(receipt_id: nil, notified_pending_on: nil)
+        .where(paid_on: nil, notified_pending_on: nil)
         .where('due_on < ?', 20.days.from_now).count.should == 0
     end
   end
@@ -264,7 +268,7 @@ describe Billingly::Invoice do
       invoice.reload
       invoice.notified_overdue_on.should_not be_nil
       Billingly::Invoice
-        .where(receipt_id: nil, notified_overdue_on: nil)
+        .where(paid_on: nil, notified_overdue_on: nil)
         .where('due_on < ?', Time.now).count.should == 0
     end
   end
@@ -307,7 +311,7 @@ describe Billingly::Invoice do
       invoice.reload
       invoice.notified_paid_on.should_not be_nil
       Billingly::Invoice
-        .where('receipt_id IS NOT NULL AND notified_paid_on IS NULL').count.should == 0
+        .where('paid_on IS NOT NULL AND notified_paid_on IS NULL').count.should == 0
     end
   end
 end

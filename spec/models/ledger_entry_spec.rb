@@ -1,7 +1,8 @@
 require 'spec_helper'
 
-describe Billingly::LedgerEntry do
+describe Billingly::JournalEntry do
   it 'validates account is a valid name' do
-    create(:customer).ledger_entries.build(amount: 100.0, account: 'invalid').should_not be_valid
+    create(:customer).journal_entries.build(amount: 100.0, account: 'invalid')
+      .should_not be_valid
   end
 end

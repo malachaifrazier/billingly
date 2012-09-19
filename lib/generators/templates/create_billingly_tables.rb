@@ -2,6 +2,7 @@ class CreateBillinglyTables < ActiveRecord::Migration
   def change
     create_table :billingly_customers do |t|
       t.datetime 'deactivated_since'
+      t.string 'deactivation_reason'
       t.string 'email', null: false
     end
     
@@ -42,9 +43,11 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.string 'plan_code', null: false
       t.datetime 'subscribed_on', null: false
       t.string 'periodicity', null: false
+      t.string 'grace_period', null: false
       t.boolean 'payable_upfront', null: false, default: false
       t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false
       t.datetime 'unsubscribed_on'
+      t.datetime 'is_trial_expiring_on'
       t.timestamps
     end
     
@@ -55,6 +58,7 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false # 9.99
       t.string 'plan_code', null: false
       t.boolean 'payable_upfront', null: false
+      t.string 'grace_period', null: false
       t.timestamps
     end
   end

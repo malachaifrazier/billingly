@@ -2,12 +2,11 @@ module Billingly
   class Invoice < ActiveRecord::Base
     belongs_to :subscription
     belongs_to :customer
-    belongs_to :receipt
-    has_many :ledger_entries 
+    has_many :journal_entries 
     attr_accessible :customer, :amount, :due_on, :period_start, :period_end
     
     def paid?
-      not receipt.nil?
+      not paid_on.nil?
     end
     
     def deleted?
@@ -15,19 +14,19 @@ module Billingly
     end
     
     # Settle an invoice by moving money from the cash balance into an expense,
-    # generating a receipt and marking the invoice as paid.
+    # after charged the invoice becomes paid.
     def charge
       return if paid?
       return unless deleted_on.nil?
+      return if period_start > Time.now
       return if customer.ledger[:cash] < amount
-
-      receipt = create_receipt!(customer: customer, paid_on: Time.now)
-      extra = {receipt: receipt, subscription: subscription}
-      customer.add_to_ledger(-(amount), :cash, extra)
-      customer.add_to_ledger(amount, :spent, extra)
-
-      save! # save receipt
-      return receipt
+      
+      update_attribute(:paid_on, Time.now)
+      extra = {invoice: self, subscription: subscription}
+      customer.add_to_journal(-(amount), :cash, extra)
+      customer.add_to_journal(amount, :spent, extra)
+      
+      return self
     end
     
     # When a subscription terminates, it's last invoice gets truncated so that it does
@@ -48,8 +47,8 @@ module Billingly
       if paid?
         reimburse = (old_amount - self.amount).round(2)
         extra = {invoice: self, subscription: subscription}
-        customer.add_to_ledger(reimburse, :cash, extra)
-        customer.add_to_ledger(-(reimburse), :spent, extra)
+        customer.add_to_journal(reimburse, :cash, extra)
+        customer.add_to_journal(-(reimburse), :spent, extra)
       end
       save!
       self.charge
@@ -58,15 +57,14 @@ module Billingly
 
     # Charges all invoices that can be charged from the existing customer cash balances
     def self.charge_all(collection = self)
-      collection.where(deleted_on: nil, receipt_id: nil).order('period_start').each do |invoice|
+      collection.where(deleted_on: nil, paid_on: nil).order('period_start').each do |invoice|
         invoice.charge
       end
     end
     
-    # Send the email notifying that this invoice is due soon and should be paid.
+    # This method is called by Billingly's recurring task to notify all pending invoices.
     def self.notify_all_pending
-      where('due_on < ?', Billingly::Subscription::GRACE_PERIOD.from_now)
-        .where(deleted_on: nil, receipt_id: nil, notified_pending_on: nil)
+      where(deleted_on: nil, paid_on: nil, notified_pending_on: nil)
         .each do |invoice|
           invoice.notify_pending
         end
@@ -76,7 +74,7 @@ module Billingly
       return unless notified_pending_on.nil?
       return if paid?
       return if deleted?
-      return if due_on > Billingly::Subscription::GRACE_PERIOD.from_now
+      return if due_on > subscription.grace_period.from_now
       BillinglyMailer.pending_notification(self).deliver!
       update_attribute(:notified_pending_on, Time.now)
     end
@@ -85,7 +83,7 @@ module Billingly
     # being cancelled
     def self.notify_all_overdue
       where('due_on <= ?', Time.now)
-        .where(deleted_on: nil, receipt_id: nil, notified_overdue_on: nil)
+        .where(deleted_on: nil, paid_on: nil, notified_overdue_on: nil)
         .each do |invoice|
           invoice.notify_overdue
         end
@@ -104,7 +102,7 @@ module Billingly
     # Send the email notifying that this invoice being overdue and the subscription
     # being cancelled
     def self.notify_all_paid
-      where('receipt_id is not null')
+      where('paid_on is not null')
         .where(deleted_on: nil, notified_paid_on: nil).each do |invoice|
           invoice.notify_paid
         end

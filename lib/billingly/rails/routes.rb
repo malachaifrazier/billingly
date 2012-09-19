@@ -4,6 +4,7 @@ class ActionDispatch::Routing::Mapper
       resources :subscriptions, controller: controller do
         collection do
           post :reactivate
+          post :deactivate
         end
       end
     end

@@ -7,11 +7,11 @@ module SpecHelpers
     customer.ledger.should == expectations
   end
     
-  def should_add_to_ledger(customer, new_count, &blk)
-    expect(&blk).to change{ customer.ledger_entries.count }.by(new_count)
+  def should_add_to_journal(customer, new_count, &blk)
+    expect(&blk).to change{ customer.journal_entries.count }.by(new_count)
   end
 
-  def should_have_ledger_entries(customer, amount, *accounts, extra)
+  def should_have_journal_entries(customer, amount, *accounts, extra)
     customer.reload
     accounts = [] if accounts.nil?
     unless extra.is_a?(Hash)
@@ -20,9 +20,8 @@ module SpecHelpers
     end
     
     accounts.each do |account|
-      entry = customer.ledger_entries.where(
+      entry = customer.journal_entries.where(
         account: account.to_s,
-        receipt_id: extra[:receipt],
         invoice_id: extra[:invoice],
         payment_id: extra[:payment],
         subscription_id: extra[:subscription]
@@ -37,6 +36,7 @@ module SpecHelpers
       Billingly::Subscription.generate_next_invoices
       Billingly::Invoice.charge_all
       Billingly::Customer.deactivate_all_debtors
+      Billingly::Customer.deactivate_all_expired_trials
       Billingly::Invoice.notify_all_paid
       Billingly::Invoice.notify_all_pending
       Billingly::Invoice.notify_all_overdue

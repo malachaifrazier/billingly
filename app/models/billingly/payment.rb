@@ -12,7 +12,7 @@ module Billingly
     # is enough to cover them.
     def self.credit_for(customer, amount) 
       create!(amount: amount, customer: customer).tap do |payment|
-        customer.add_to_ledger(amount, :cash, :paid, payment: payment)
+        customer.add_to_journal(amount, :cash, :paid, payment: payment)
       end
     end
   end

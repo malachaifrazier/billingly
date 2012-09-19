@@ -1,9 +1,20 @@
 FactoryGirl.define do
   factory :subscription, class: Billingly::Subscription do 
     customer
+    plan_code 'ABC1'
+    grace_period 10.days
+    
+    factory :trial do
+      is_trial_expiring_on 15.days.from_now
+      periodicity 1.month
+      subscribed_on Time.now
+      description 'Free trial for monthly subscription for 9.9'
+      amount BigDecimal.new('9.9')
+      payable_upfront false
+    end
     
     factory :monthly do
-      periodicity :monthly
+      periodicity 1.month
       description 'monthly subscription for 9.9'
       amount BigDecimal.new('9.9')
       payable_upfront false
@@ -51,7 +62,7 @@ FactoryGirl.define do
     end
 
     factory :yearly do
-      periodicity :yearly
+      periodicity 1.year
       description 'yearly subscription for 99.99'
       amount BigDecimal.new('99.99')
       payable_upfront true

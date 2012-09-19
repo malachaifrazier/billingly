@@ -32,6 +32,13 @@ class Billingly::SubscriptionsController < ::ApplicationController
     return render nothing: true, status: 403 unless current_customer.reactivate
     on_reactivation_success
   end
+  
+  # Unsubscribes the customer from his last subscription and deactivates his account.
+  # Performing this action would set the deactivation reason to be 'left_voluntarily'
+  def deactivate
+    current_customer.deactivate_left_voluntarily
+    redirect_to(action: :index)
+  end
 
   # When a subscription is sucessful this callback is triggered.
   # Host applications should override it by subclassing this subscriptionscontroller,

@@ -1,32 +1,12 @@
 require 'spec_helper'
 
 describe Billingly::Subscription do
-  
-  { 'monthly' => true, 'yearly' => true, :yearly => true, :monthly => true,
-    'invalid' => false, nil => false}.each do |value, expectation|
-    it "validates periodicity '#{value}'" do
-      build(:first_month, periodicity: value).valid?.should == expectation
-    end
-  end
-  
-  { :monthly => 1.month, :yearly => 1.year }.each do |value, expectation|
-    it 'exposes the periodicity size to do date arithmetic' do
-      build(:first_month, periodicity: value).period_size.should == expectation
-    end
-  end
-  
-  it 'should not get a period size when there is no periodicity' do
-    expect do
-      build(:first_month, periodicity: nil).period_size
-    end.to raise_exception(ArgumentError)
-  end
-  
   describe 'when invoicing' do
     describe 'when generating the first invoice' do
       let(:subscription){ create(:customer).subscribe_to_plan(build(:pro_50_monthly)) }
       subject{ subscription.invoices.last }
 
-      its(:receipt){ should be_nil }
+      its(:paid_on){ should be_nil }
       its(:amount){ should == 9.9 }
       its(:customer){ should == subscription.customer }
       its(:period_end){ should == subscription.subscribed_on + 1.month }
@@ -85,19 +65,20 @@ describe Billingly::Subscription do
         subscription.generate_next_invoice.should be_nil
       end.not_to change{ Billingly::Invoice.count }
     end
+    
   end
-  
+
   it 'sets the right due date for the first yearly upfront invoices' do
     subscription = create(:yearly, subscribed_on: Date.today)
     subscription.generate_next_invoice.due_on.to_date.should ==
-        (subscription.subscribed_on.to_date + Billingly::Subscription::GRACE_PERIOD)
+        (subscription.subscribed_on.to_date + subscription.grace_period)
   end
 
   it 'sets the right due date for the first monthly due-month invoice' do
     subscription = create(:monthly, subscribed_on: Date.today)
     first_invoice = subscription.generate_next_invoice
     first_invoice.due_on.to_date.should ==
-        (subscription.subscribed_on + 1.month + Billingly::Subscription::GRACE_PERIOD).to_date
+        (subscription.subscribed_on + 1.month + subscription.grace_period).to_date
   end
   
   describe 'when terminating a subscription' do
@@ -131,5 +112,19 @@ describe Billingly::Subscription do
     expect do
       Billingly::Subscription.generate_next_invoices
     end.to change{ Billingly::Invoice.count }.by(2)
+  end
+  
+  describe 'when doing a trial period' do
+    it 'Exposes a trial attribute' do
+      create(:trial).should be_trial
+      create(:first_month).should_not be_trial
+    end
+
+    it 'should never generate an invoice for a trial subscription' do
+      subscription = create(:trial)
+      expect do
+        subscription.generate_next_invoice.should be_nil
+      end.not_to change{ subscription.invoices.count }
+    end
   end
 end
