@@ -1,7 +1,6 @@
 require 'validates_email_format_of'
 
 module Billingly
-
   # A {Customer} is Billingly's main actor.
   # * Customers have a {Subscription} to your service which entitles them to use it.
   # * Customers are {Invoice invoiced} regularly to pay for their {Subscription}
@@ -49,6 +48,11 @@ module Billingly
     # @!attribute subscriptions
     # @return [Array<Subscription>]
     has_many :subscriptions
+
+    # All paymetns that were ever credited for this customer
+    # @!attribute payments
+    # @return [Array<Payment>]
+    has_many :payments
 
     # The {Subscription} for which the customer is currently being charged.
     # @!attribute [r] active_subscription
@@ -111,9 +115,10 @@ module Billingly
 
       subscriptions.build.tap do |new|
         [:payable_upfront, :description, :periodicity,
-         :amount, :plan_code, :grace_period].each do |k|
+         :amount, :grace_period].each do |k|
           new[k] = plan[k]
         end
+        new.plan = plan if plan.is_a?(Billingly::Plan)
         new.is_trial_expiring_on = is_trial_expiring_on
         new.subscribed_on = Time.now
         new.save!
@@ -237,7 +242,6 @@ module Billingly
       deactivate(:debtor)
     end
 
-
     # Customers whose account has been {#deactivate deactivated} can always re-join the service
     # as long as they {#debtor? don't owe any money}
     # @return [self, nil] nil if the customer could not be reactivated, self otherwise.
@@ -266,6 +270,21 @@ module Billingly
       customers.each do |customer|
         customer.deactivate_trial_expired
       end
+    end
+
+    # Can this customer subscribe to a plan?.
+    # You may want to prevent customers from upgrading or downgrading to other plans
+    # depending on their usage of your service.
+    #
+    # This method is only used in views and controllers to prevent customers from requesting
+    # to be upgraded or downgraded to a plan without your consent.
+    # The model layer can still subscribe the customer if you so desire.
+    #
+    # The default implementation lets Customers upgrade to any if they are currently doing
+    # a trial period, and it does not let them re-subscribe to the same plan afterwards.
+    def can_subscribe_to?(plan)
+      return false if !doing_trial? && active_subscription && active_subscription.plan == plan
+      return true
     end
   end
 end

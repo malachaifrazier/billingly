@@ -1,6 +1,6 @@
 # This controller takes care of managing subscriptions.
 class Billingly::SubscriptionsController < ::ApplicationController
-  before_filter :requires_customer, only: [:index, :reactivate]
+  before_filter :requires_customer
   before_filter :requires_active_customer, except: [:index, :reactivate]
 
   # Index shows the current subscription to customers while they are active.
@@ -8,15 +8,10 @@ class Billingly::SubscriptionsController < ::ApplicationController
   # It's likely the only reachable page for deactivated customers.
   def index
     @subscription = current_customer.active_subscription
-    redirect_to(action: :new) unless @subscription
+    @plans = Billingly::Plan.all
+    @invoices = current_customer.invoices.order('created_at DESC')
   end
   
-  # Should let customers choose a plan to subscribe to, wheter they are subscribing
-  # for the first time or upgrading their plan.
-  def new
-    @plans = Billingly::Plan.all
-  end
-
   # Subscribe the customer to a plan, or change his current plan.
   def create
     plan = Billingly::Plan.find(params[:plan_id])
@@ -49,7 +44,6 @@ class Billingly::SubscriptionsController < ::ApplicationController
   end
   
   def on_reactivation_success
-    on_subscription_success
+    redirect_to(action: :index) 
   end
-  
 end

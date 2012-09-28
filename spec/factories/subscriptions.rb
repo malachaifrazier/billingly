@@ -1,7 +1,6 @@
 FactoryGirl.define do
   factory :subscription, class: Billingly::Subscription do 
     customer
-    plan_code 'ABC1'
     grace_period 10.days
     
     factory :trial do

@@ -1,0 +1,79 @@
+%h1 Your Subscription
+- if current_customer.deactivated?
+  .alert.alert-warning
+    %h2 Your account has been deactivated
+    - if current_customer.deactivation_reason == 'trial_expired'
+      %p Because your trial period is over.
+    - elsif current_customer.deactivation_reason == 'debtor'
+      %p Because you have unpaid invoices.
+    - else
+      %p Per your request.
+
+  - if current_customer.deactivation_reason != 'trial_expired'
+    - if current_customer.debtor?
+      %p You still owe us some invoices.
+      %p We will reactivate your account once all your invoices have been paid.
+    - else
+      %p
+        You can reactivate your account right away
+        = form_tag reactivate_subscriptions_path do
+          %button.btn.btn-large.btn-success= _('Reactivate')
+
+- if current_customer.doing_trial?
+  %p
+    You are currently on a trial period, your trial expires in
+    = current_customer.trial_days_left
+    days.
+  
+- if @subscription
+  %p
+    You are subscribed since:
+    = @subscription.subscribed_on.to_date
+- else
+  %p You are not subscribed yet, please choose one of the plans below:
+
+.row
+  - @plans.sort_by(&:amount).reverse.each do |plan|
+    .span3
+      .well.plan-container
+        %h1
+          = plan.name
+        
+        %h4 Pay $#{plan.amount.to_i} every #{plan.periodicity.inspect}
+
+        %p
+          %span.badge.badge-info #{plan.awesomeness_level} points.
+          
+        %p.description= plan.description
+
+        - if current_customer.can_subscribe_to(plan)
+          = form_tag(subscriptions_path, :action => :post) do
+            = hidden_field_tag :plan_id, plan.id
+            = submit_tag 'Subscribe', class: 'btn btn-large btn-success',
+                disable_with: 'subscribing'
+        - else
+          %button.btn.btn-large(disabled=true) Subscribe
+
+- if @invoices.size > 0
+  %h2 Your invoices
+  %table.table.table-striped
+    %thead 
+      %tr
+        %td #
+        %td From
+        %td To
+        %td Due Date
+        %td Amount
+        %td
+    - @invoices.each do |invoice|
+      %tr.invoice
+        %td= invoice.id
+        %td= invoice.period_start.to_date
+        %td= invoice.period_end.to_date
+        %td= invoice.due_on.to_date
+        %td= "$%.2f" % invoice.amount
+        %td
+          &nbsp;
+          - if invoice.paid?
+            %span.label.label-success Paid
+

@@ -45,6 +45,15 @@ module Billingly
     # @property is_trial_expiring_on
     # @return [DateTime] 
     
+    # When a subscription was started from a {Plan} a reference to the plan is saved.
+    # Although, all the plan's fields are denormalized in this subscription.
+    #
+    # If the subscription was not started from a plan, then this will be nil.
+    #
+    # @property plan
+    # @return [Billingly::Plan, nil] 
+    belongs_to :plan
+    
     # (see #is_trial_expiring_on)
     # @property trial?
     # @return [Boolean]

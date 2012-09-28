@@ -1,0 +1,87 @@
+!!! Strict
+
+%html
+  %head
+    %title Billingly Example App
+    = csrf_meta_tags
+
+    = stylesheet_link_tag "application", :media => "all"
+  
+  %body
+    .navbar.navbar-fixed-top
+      .navbar-inner
+        .container
+          = link_to "Billingly Example", root_path, class: 'brand'
+
+    .container
+      .content
+        .row
+          .span12
+            = yield
+          
+        %hr
+        .row
+          .span12
+            %h2 What is Billingly?
+            %p  
+              Billingly is an open source rails 3 engine that manages
+              paid subscriptions to your web application. 
+              
+            %p
+              It's similar to the
+              %a(href="http://railskits.com/saas/") SaaS Rails Kit
+              but on earlier stages. If you need premium support and can afford it,
+              and don't care about using propietary software, you should use their product.
+              
+            %p
+              If you just want a service to manage your subscriptions for you, then
+              you may want to check out 
+              %a(href="http://chargify.com") Chargify.com
+              
+        .row
+          .span12
+            %h2 What does it do?
+            %ul
+              %li
+                Subscribe customers to your service:
+                %ul
+                  %li
+                    Subscriptions can have an arbitrary length:
+                    A year, a month, 90 days ...
+                  %li
+                    You can request payments upfront or after the subscription
+                    period is over.
+
+              %li Offer standarized subscription plans for self-service sign ups.
+
+              %li Offer special deals on a per-customer basis.
+
+              %li Invoice your customers automatically and send receipts once they pay.
+
+              %li Notify customers about due dates.
+
+              %li Restrict access to debtors, and let them back in once they pay their debt.
+
+              %li 
+                Let customers upgrade or downgrade to another plan.
+                Prorating and reimbursing in case there were any upfront payments.
+
+              %li Offer a trial period before you require people to become paying customers.
+
+        .row
+          .span8
+            %h2 What doesn't it do?
+            %p 
+              %strong Billingly does not receive payments directly
+              (from Paypal, or Worldpay for example).
+            %p
+              However, you can use
+              %a(href="http://activemerchant.org") for handling payment notifications
+              from third party services, and easily hookup Billingly to credit the payment
+              into your customer's account. Billingly will take care of all the rest.
+
+      %hr
+      %footer
+        <p>&copy; Company 2012</p>
+
+    = javascript_include_tag "application"

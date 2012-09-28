@@ -1,7 +1,7 @@
 class ActionDispatch::Routing::Mapper
   def add_billingly_routes(skope=nil, controller='billingly/subscriptions')
     route = lambda do 
-      resources :subscriptions, controller: controller do
+      resources :subscriptions, controller: controller, only: [:index, :create] do
         collection do
           post :reactivate
           post :deactivate

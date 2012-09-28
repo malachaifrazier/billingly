@@ -40,7 +40,6 @@ class CreateBillinglyTables < ActiveRecord::Migration
     create_table :billingly_subscriptions do |t|
       t.references :customer, null: false
       t.string 'description', null: false
-      t.string 'plan_code', null: false
       t.datetime 'subscribed_on', null: false
       t.string 'periodicity', null: false
       t.string 'grace_period', null: false
@@ -48,6 +47,7 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false
       t.datetime 'unsubscribed_on'
       t.datetime 'is_trial_expiring_on'
+      t.references :plan
       t.timestamps
     end
     
@@ -56,9 +56,9 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.string 'description' # 50GB for 9,99 a month.
       t.string 'periodicity'
       t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false # 9.99
-      t.string 'plan_code', null: false
       t.boolean 'payable_upfront', null: false
       t.string 'grace_period', null: false
+      t.boolean 'hidden_on'
       t.timestamps
     end
   end

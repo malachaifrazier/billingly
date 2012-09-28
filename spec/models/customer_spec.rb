@@ -47,7 +47,7 @@ describe Billingly::Customer do
 
     subject { subscription }
     
-    [:plan_code, :payable_upfront, :description, :periodicity, :amount].each do |k|
+    [:payable_upfront, :description, :periodicity, :amount].each do |k|
       its(k){ should == plan.send(k) }
     end
     
@@ -60,12 +60,26 @@ describe Billingly::Customer do
         customer.subscribe_to_plan(create(:pro_50_yearly))    
       end.to change{ customer.invoices.count }.by(1)
     end
+    
   end
 
   it 'can subscribe directly to a trial' do
     subscription = customer.subscribe_to_plan(plan, 10.days.from_now)
     customer.should be_doing_trial
     subscription.should be_trial
+  end
+
+  it 'saves a reference to the plan when subscribing to a plan' do
+    subscription = customer.subscribe_to_plan(plan)
+    subscription.plan.should == plan
+  end
+    
+  it 'does not save a reference to the plan when subscribing to a non-plan' do
+    pending
+  end
+  
+  it 'keeps the plan when resubscribing to the same subscription' do
+    pending
   end
   
   describe 'when changing from one plan to another' do
@@ -304,6 +318,29 @@ describe Billingly::Customer do
       customer.should be_deactivated
       customer.reactivate.should be_nil
       customer.should be_deactivated
+    end
+  end
+  
+  describe 'when checking if the customer can upgrade to a certain plan' do
+    [:pro_50_monthly, :pro_50_yearly, :pro_100_monthly, :pro_100_yearly].each do |plan|
+      it "always lets customers on trial period subscribe, using #{plan}" do
+        customer = create(:customer)
+        customer.stub(doing_trial?: true)
+        customer.can_subscribe_to?(create(plan)).should be_true
+      end
+    end
+    
+    it 'lets the customer subscribe if not subscribed yet' do
+      customer = create(:customer)
+      plan = create(:pro_100_yearly)
+      customer.can_subscribe_to?(plan).should be_true
+    end
+
+    it 'does not let customer subscribe to the same plan' do
+      customer = create(:customer)
+      plan = create(:pro_100_yearly)
+      customer.subscribe_to_plan(plan)
+      customer.can_subscribe_to?(plan).should be_false
     end
   end
 end
