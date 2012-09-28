@@ -5,6 +5,8 @@ Dummy::Application.routes.draw do
   add_billingly_routes
   
   add_billingly_routes 'namespaced_billingly'
+  
+  post 'use_cases/:action', controller: 'use_cases', as: 'use_cases'
 
   # The priority is based upon order of creation:
   # first created -> highest priority.
