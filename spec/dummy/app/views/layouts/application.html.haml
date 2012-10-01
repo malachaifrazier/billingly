@@ -11,10 +11,42 @@
     .navbar.navbar-fixed-top
       .navbar-inner
         .container
-          = link_to "Billingly Example", root_path, class: 'brand'
+          %ul.nav
+            %li
+              = link_to "Billingly Example", root_path, class: 'brand'
+            %li
+              = link_to root_path do
+                %i.icon-home
+                Home
+            %li
+              = link_to subscriptions_path do
+                %i.icon-shopping-cart
+                Subscription
+          .pull-right
+            = link_to "Credit $5", use_cases_path(:credit_payment),
+                method: :post, class: 'btn btn-inverse'
+          .nav.pull-right
+            .btn-group
+              %a.btn.btn-inverse.dropdown-toggle(href="#" data-toggle="dropdown")
+                Select Scenario
+                %span.caret
+              %ul.dropdown-menu
+                %li= link_to "New user from scratch",
+                  use_cases_path(:create_new), method: :post
+                %li= link_to "Regular user who has been around for 3 months",
+                  use_cases_path(:create_old_user), method: :post
+                %li= link_to "User on trial period",
+                  use_cases_path(:create_trial), method: :post
+                %li= link_to "User whose trial expired",
+                  use_cases_path(:create_expired_trial), method: :post
+                %li= link_to "Debtor whose account was deactivated",
+                  use_cases_path(:create_deactivated_debtor), method: :post
 
     .container
       .content
+        - if flash[:notice]
+          .alert.alert-info
+            = flash[:notice]
         .row
           .span12
             = yield

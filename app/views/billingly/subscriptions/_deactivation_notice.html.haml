@@ -1,0 +1,12 @@
+- if current_customer.deactivated?
+  .alert.alert-warning
+    - if current_customer.deactivation_reason == 'trial_expired'
+      %h2 Your trial period is over
+      %p Please choose a plan to continue using the service.
+    - elsif current_customer.deactivation_reason == 'debtor'
+      %h2 Your account has been momentarily deactivated
+      %p It will be reactivated once your outstanding invoices are settled.
+    - else
+      %h2 Your account is not active.
+      %p Choose a plan below and it will be reactivated.
+      

@@ -66,21 +66,28 @@ describe Billingly::Invoice do
       end
 
       it 'prorates and changes its price' do
+        date = Date.today.beginning_of_year
+        Timecop.travel date
+        invoice = create(:first_year, subscribed_on: date).invoices.first
         Timecop.travel 6.months.from_now.to_date
         invoice.truncate
-        invoice.amount.to_f.should == 49.55
+        invoice.amount.to_f.should == 49.69
       end
 
       it 'reimburses money to the user balance if already paid' do
+        date = Date.today.beginning_of_year
+        Timecop.travel date
+        invoice = create(:first_year, subscribed_on: date).invoices.first
         customer = invoice.customer
         customer.add_to_journal(100.0, :cash, :paid)
+        Timecop.travel 1.day.from_now
         invoice.charge
         Timecop.travel 3.months.from_now.to_date
         should_add_to_journal(customer, 2) do
           invoice.truncate
           extra = {invoice: invoice, subscription: invoice.subscription}
-          should_have_journal_entries(customer, -75.1, :spent, extra)
-          should_have_journal_entries(customer, 75.1, :cash, extra)
+          should_have_journal_entries(customer, -74.89, :spent, extra)
+          should_have_journal_entries(customer, 74.89, :cash, extra)
         end
       end
     end

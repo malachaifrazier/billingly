@@ -24,7 +24,10 @@ class Billingly::SubscriptionsController < ::ApplicationController
   # Their account will be reactivated to their old subscription plan immediately.
   # They can change plans afterwards.
   def reactivate
-    return render nothing: true, status: 403 unless current_customer.reactivate
+    plan = Billingly::Plan.find_by_id(params[:plan_id])
+    if current_customer.reactivate(plan).nil?
+      return render nothing: true, status: 403
+    end
     on_reactivation_success
   end
   

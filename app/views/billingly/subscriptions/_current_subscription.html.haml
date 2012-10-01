@@ -1,0 +1,22 @@
+- unless current_customer.deactivated?
+  - if current_customer.doing_trial?
+    %p
+      You are currently on a trial period, your trial expires in
+      = current_customer.trial_days_left
+      days.
+    
+  - if subscription
+    %p
+      Your subscription is for:
+      %strong= subscription.description
+    %p
+      You are subscribed since:
+      = subscription.subscribed_on.to_date
+      
+  - else
+    %p You are not subscribed yet, please choose one of the plans below:
+
+- if current_customer.ledger[:cash]
+  %p
+    Your current balance is:
+    %strong $ #{current_customer.ledger[:cash]}

@@ -45,6 +45,8 @@ describe 'SubscriptionLifecycle' do
     end
     
     it 'Customer changes to another plan' do
+      date = Date.today.beginning_of_year
+      Timecop.travel date
       customer.subscribe_to_plan(build(:pro_50_monthly))
       customer.credit_payment(10.0)
       days_go_by 25
@@ -52,11 +54,11 @@ describe 'SubscriptionLifecycle' do
       customer.subscribe_to_plan(build(:pro_50_yearly))
       
       # The last invoice for the last plan should have been prorated
-      assert_ledger customer, cash: 2.08, paid: 10.0, spent: 7.92
+      assert_ledger customer, cash: 2.34, paid: 10.0, spent: 7.66
 
       days_go_by 5
       customer.credit_payment(100.0)
-      assert_ledger customer, cash: 2.09, paid: 110.0, spent: 107.91
+      assert_ledger customer, cash: 2.35, paid: 110.0, spent: 107.65
     end
     
     it 'Customer leaves the site before paying their last invoice, which was not due yet' do

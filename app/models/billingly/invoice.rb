@@ -107,6 +107,7 @@ module Billingly
           invoice.notify_paid
         end
     end
+
     def notify_paid
       return unless paid?
       return unless notified_paid_on.nil?

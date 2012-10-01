@@ -1,0 +1,30 @@
+.row
+  - plans.sort_by(&:amount).reverse.each do |plan|
+    .span3
+      .well.plan-container
+        %h1
+          = plan.name
+        
+        %h4 Pay $#{plan.amount.to_i} every #{plan.periodicity.inspect}
+
+        %p
+          %span.badge.badge-info #{plan.awesomeness_level} points.
+          
+        %p.description= plan.description
+
+        - if current_customer.can_subscribe_to?(plan)
+          - if current_customer.deactivated?
+            = form_tag(reactivate_subscriptions_path, :action => :post) do
+              = hidden_field_tag :plan_id, plan.id
+              = submit_tag 'Subscribe', class: 'btn btn-large btn-success',
+                  disable_with: 'subscribing'
+          - else
+            = form_tag(subscriptions_path, :action => :post) do
+              = hidden_field_tag :plan_id, plan.id
+              = submit_tag 'Subscribe', class: 'btn btn-large btn-success',
+                  disable_with: 'subscribing'
+        - elsif subscription && subscription.plan == plan
+          %button.btn.btn-large(disabled=true) Your plan
+        - else
+          %button.btn.btn-large(disabled=true) Subscribe
+

@@ -4,18 +4,6 @@ describe Billingly::SubscriptionsController do
   let(:customer){ create :customer }
 
   describe 'when allowing/denying access' do
-    it 'requires customer to be logged in for the new action' do
-      controller.stub current_customer: nil
-      get :new
-      response.should redirect_to(root_path)
-    end
-
-    it 'requires an active customer for the new action' do
-      controller.stub current_customer: create(:deactivated_customer)
-      get :new
-      response.should redirect_to(controller: 'billingly/subscriptions', action: :index)
-    end
-
     it 'index requires a customer' do
       controller.stub current_customer: nil
       get :index
@@ -45,22 +33,14 @@ describe Billingly::SubscriptionsController do
       assigns(:subscription).should_not be_nil
     end
 
-    it 'prompts to subscribe if not subscribed to any plan' do
-      get :index
-      response.should redirect_to action: :new
-    end
-
-    it 'lists all availble plans' do
-      get :new
-      assigns(:plans).should == Billingly::Plan.all
-    end
-
     it 'subscribes a customer to a plan' do
       plan = create :pro_50_monthly
       customer.should_receive(:subscribe_to_plan).with(plan)
       controller.should_receive :on_subscription_success
       post :create, plan_id: plan.id
     end
+    
+    pending 'does not let customer subscribe to a plan if they cant subscribe to it'
 
     it 'does not subscribe a customer to a bogus plan' do
       customer.should_not_receive(:subscribe_to_plan)
@@ -70,7 +50,7 @@ describe Billingly::SubscriptionsController do
       end.to raise_exception ActiveRecord::RecordNotFound
     end
   
-    it 'should set the diactivation reason to be left_voluntarily' do
+    it 'should set the diactivation reason to be left_voluntarily when deactivating' do
       customer.should_receive(:deactivate_left_voluntarily)
       post :deactivate
       response.should redirect_to(action: :index)
@@ -100,6 +80,14 @@ describe Billingly::SubscriptionsController do
       deactivated.stub(reactivate: nil)
       post :reactivate
       response.status.should == 403
+    end
+    
+    it 'Optionally takes a plan when reactivating' do
+      customer = deactivated
+      plan = create(:pro_50_monthly)
+      deactivated.should_receive(:reactivate).with(plan).and_return(deactivated)
+      post :reactivate, plan_id: plan.id.to_s
+      response.should redirect_to(action: :index)
     end
   end
 end

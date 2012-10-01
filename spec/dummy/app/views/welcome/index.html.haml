@@ -3,7 +3,7 @@
     Hello
     = current_customer.email
     let me tell you that:
-  - if current_customer.active_subscription
+  - if current_customer.active_subscription && current_customer.active_subscription.plan
     %h1 You are #{current_customer.active_subscription.plan.name}
   - else
     %h1 You could be better...
