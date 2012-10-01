@@ -4,18 +4,6 @@ module Billingly
   end
 
   class Engine < Rails::Engine
-    def self.app_path
-      File.expand_path('../../app', called_from)
-    end
-
-    %w{controller helper mailer model}.each do |resource|
-      class_eval <<-RUBY
-        def self.#{resource}_path(name)
-          File.expand_path("#{resource.pluralize}/billingly/\#{name}.rb", app_path)
-        end
-      RUBY
-    end
-  
     # Extends the ApplicationController with all the
     # billingly before_filters and helper methods
     initializer 'billingly.app_controller' do |app|

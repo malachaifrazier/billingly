@@ -1,6 +1,4 @@
 Dummy::Application.routes.draw do
-  #mount Billingly::Engine => '/billingly'
-  #match 'show' => 'billingly/subscriptions#show'
 
   add_billingly_routes
   

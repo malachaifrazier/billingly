@@ -1,0 +1,158 @@
+# @markup markdown
+
+# Getting Started
+
+## Preface
+
+At its core, billingly has a {Billingly::Customer} class. A {Billingly::Customer} has a {Billingly::Subscription} to your service, for which she will receive {Billingly::Invoice Invoices} regularly via email.
+Billingly keeps a balance for each one of your {Customer customers}, whenever you receive a payment you should {Billingly::BaseCustomer#credit_payment credit the payment} into their account.
+
+When a payment is credited, billingly will try to settle outstanding invoices, always starting from the oldest one. If the customer's balance is not enough to cover the last pending invoice then nothing will happen. Once an invoice is settled the customer will be sent a receipt via email. 
+
+Invoices have a due date, customers will notified about pending invoices before they are overdue. When a customer misses a payment, billingly will immediately deactivate his account and notify via email about the deactivation.
+
+Deactivated customers will be redirected forcefully to their subscription page where they can see all their invoices. Once they pay their overdue invoices their account is re-activated.
+
+You may change a customers subscription at any point. Under the hood, changing a subscription consist on terminating the current subscription and creating a new one. Any invoices paid for the terminated subscription will be automatically prorated and the remaining balance will be credited back into the customer's account.
+
+Each customer can have a completely custom Subscription, but you will usually want people to sign up to a predefined {Billingly::Plan}. Billingly comes with a {Billingly::Plan} model and a {Billingly::SubscriptionsController} which can be extended and enable you to support self-service subscriptions out of the box.
+
+Billingly also lets you offer free trial subscriptions. You can configure a trial termination date when subscribing a customer to any type of plan, billingly will deactivate the customers account when the date of expiration comes, and will show them a subscription page from where they can signup to any other full plan.
+
+# Installing
+
+## Get the gem
+
+    gem install billingly
+
+    gem 'billingly'
+
+## Create the tables
+
+Use the provided generator to create the migration that will generate all the required tables.
+
+You can add your custom attributes to the customer and plans tables, but changing the table names is not advised. Tables are namespaced with the 'billingly_' prefix.
+
+    rails g billingly_migration
+
+For example, if your application's plans differ in the amount of users they allow, you can
+add a `user_quota` field to your `billingly_plans` table.
+
+You may also add a foreign key to your `billingly_customers` table so that each customer points
+to a user.
+
+## Customize the Models
+
+Billingly models are abstract classes with default implementations, you don't need to override them but you would probably want to override the {Billingly::Customer} model to provide your implementations for the {Billingly::BaseCustomer#on\_subscription\_success} and {Billingly::BaseCustomer#can\_subscribe\_to?}
+
+Continuing with the previous example, this snippet adds a user association to the customer and denormalizes the `user_quota` from the chosen plan into the User for easier lookup. It also prevents customers from subscribing to a plan offering a smaller quota than their current one.
+
+    # app/models/billingly/customer.rb
+    class Billingly::Customer < Billingly::BaseCustomer
+      belongs_to :user
+
+      def on_subscription_success
+        # For simplicity, we assume there is always a user.
+        user.update_attribute(:user_quota, active_subscription.plan.user_quota)
+      end
+      
+      # Return false signifies that the user cannot subscribe to the provided plan
+      # if the current plan has a larger storage quota.
+      def can_subscribe_to(plan)
+        current_plan = active_subscription.plan
+        if current_plan && current_plan.user_quota > plan.user_quota
+          return false
+        end
+        super
+      end
+    end
+      
+## Provide a Customer to your controllers
+
+Billingly comes with 2 before filters for requiring the current user to be a customer, and
+requiring the current customer to be active (that is, to not be deactivated because of an expired trial, overdue invoices, etc). These methods are called `requires_customer` and `requires_active_customer` respectively.
+
+You provide a customer by overriding `current_customer` on your ApplicationController. Ideally, you would always have a `current_customer` as long as there is a user logged in, even if the currently logged in user has not subscribed to any plan yet. `current_customer` can return `nil` if no concept of a customer is available.
+
+The `requires_customer` before\_filter will call `on_empty_customer` when `current_customer` is `nil`. `on_empty_customer` simply redirects to your root_path but you can override it too.
+
+`requires_active_customer` redirects to the {Billingly::SubscriptionsController#index}, which presents the user with the steps required to reactivate his account.
+
+Continuing with the {https://github.com/plataformatec/devise Devise} compatible examples, here's a snippet that overrides `ApplicationController` to use the customer associated to a user.
+
+    class ApplicationController < ActionController::Base
+      def current_customer
+        current_user.customer
+      end
+    end
+
+`current_customer` is also available on your views as a helper method.
+
+## Customize the Controller
+
+The {Billingly::SubscriptionsController} can be overriden too. You may want to override {Billingly::SubscriptionsController#on\_subscription\_success #on\_subscription\_success} and {Billingly::SubscriptionsController#on\_reactivation\_success #on\_reactivation\_success}.
+
+These are called when your customer subscribes or reactivates his account, respectively.
+
+They both redirect to the `index` action by default.
+
+Here's a snippet overriding them to go to the root path with a flash notice.
+
+    # app/controller/custom_subscriptions_controller.rb
+    class CustomSubscriptionsController < Billingly::SubscriptionsController
+      def on_subscription_success
+        redirect_to root_path, notice: "yay, you subscribed!"
+      end
+
+      def on_reactivation_success
+        redirect_to root_path, notice: "yay, your account was reactivated!"
+      end
+    end
+
+## Mount Routes
+
+We provide a shortcut so you can add the {Billingly::SubscriptionsController SubscriptionsController} to your `routes.rb`.
+
+Here's a snippet showing two different ways of mounting the routes:
+
+    # your routes.rb
+    YourApp::Application.routes.draw do
+
+      # Will mount the default Billingly::SubscriptionsController in the /subscriptions path.
+      add_billingly_routes
+      
+      # Will mount CustomModule::CustomSubscriptionsController in the
+      # /namespaced/subscriptions path
+      add_billingly_routes 'namespaced', 'custom_module/custom_subscriptions_controller'
+    end
+
+## Schedule all the recurring jobs
+All the invoicing, deactivating and emailing is done through a rake task.
+
+The tasks are designed to fail gracefully and you can run them as often as you want without getting into undesired or invalid states. 
+
+Configure a cron job to run this around 4 times a day (should run without failures at least once a day)
+
+    $ rake billingly:all
+
+## Customize the SubscriptionsController templates
+
+Use the provided template generator to copy all of billingly's templates and partials into your application's directory structure.
+
+All templates are provided in Haml format, using Twitter Bootstrap compatible markup.
+
+These templates are used directly on the {http://billing.ly Demo App}
+
+    $ rails g billingly_views
+
+## Customize the mailer templates
+
+Billingly will send emails for the following scenarios:
+
+  * An invoice is available to be paid.
+  * An invoice is about to go overdue.
+  * A payment was processed successfully.
+
+You can copy all the built in templates into your app's directory structure and customize them:
+
+    $ rails g billingly_mailer_views

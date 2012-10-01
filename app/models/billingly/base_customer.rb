@@ -1,6 +1,7 @@
 require 'validates_email_format_of'
 
 module Billingly
+
   # A {Customer} is Billingly's main actor.
   # * Customers have a {Subscription} to your service which entitles them to use it.
   # * Customers are {Invoice invoiced} regularly to pay for their {Subscription}
@@ -126,7 +127,15 @@ module Billingly
         new.subscribed_on = Time.now
         new.save!
         new.generate_next_invoice  
+        on_subscription_success
       end
+    end
+
+    # Callback called whenever this customer is successfully subscribed to a plan.
+    # This callback does not differentiate if the customer is subscribing for the first time,
+    # reactivating his account or just changing from one plan to another.
+    # self.active_subscription will be the current subscription when this method is called.
+    def on_subscription_success
     end
     
     # Creates a general ledger from {JournalEntry journal entries}.
@@ -287,6 +296,7 @@ module Billingly
     # The default implementation lets Customers upgrade to any if they are currently doing
     # a trial period, and it does not let them re-subscribe to the same plan afterwards.
     # It also always disallows debtors to subscribe to another plan.
+    # @param plan [Billingly::Plan]
     def can_subscribe_to?(plan)
       return false if !doing_trial? && active_subscription && active_subscription.plan == plan
       return false if debtor?
