@@ -27,9 +27,9 @@ Billingly can:
 Billingly does not receive payments directly (from Paypal, or Worldpay for example). However, you can use [ActiveMerchant](http://activemerchant.org) for handling payment notifications from third party services, and easily hookup Billingly to credit the payment into your customer's account. Billingly will take care of all the rest.
 
 # Getting Started
-  * Read the [Getting Started Guide](TUTORIAL.rdoc).
-  * Check out the Demo App.
-  * Explore the Docs.
+  * Read the [Getting Started Guide](http://rubydoc.info/github/nubis/billingly/master/file/TUTORIAL.rdoc).
+  * Check out the [Demo App](http://billing.ly).
+  * Explore the [Docs](http://rubydoc.info/github/nubis/billingly/master/frames/file/README.md).
 
 # License
   MIT License. Copyright 2012 Nubis (nubis@woobiz.com.ar)
