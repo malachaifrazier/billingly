@@ -32,7 +32,7 @@ class UseCasesController < ApplicationController
   end
   
   def create_old_user
-    Timecop.travel 85.days.ago
+    Timecop.travel 60.days.ago
     customer = fresh_customer
     customer.credit_payment(plan.amount * 2)
     subscription = customer.subscribe_to_plan(plan)
