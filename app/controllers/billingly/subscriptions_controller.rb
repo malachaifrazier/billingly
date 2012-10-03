@@ -1,7 +1,7 @@
 # This controller takes care of managing subscriptions.
 class Billingly::SubscriptionsController < ::ApplicationController
   before_filter :requires_customer
-  before_filter :requires_active_customer, except: [:index, :reactivate]
+  before_filter :requires_active_customer, except: [:index, :reactivate, :invoice]
 
   # Index shows the current subscription to customers while they are active.
   # It's also the page that prompts them to reactivate their account when deactivated.
@@ -40,15 +40,28 @@ class Billingly::SubscriptionsController < ::ApplicationController
     current_customer.deactivate_left_voluntarily
     redirect_to(action: :index)
   end
+  
+  # Shows an invoice.
+  # @todo
+  #   This should actually be the #show action of an InvoicesController but we're lazy ATM.
+  def invoice
+    @invoice = current_customer.invoices.find(params[:invoice_id])
+  end
 
   # When a subscription is sucessful this callback is triggered.
   # Host applications should override it by subclassing this subscriptionscontroller,
   # and include their own behaviour, and for example grant the privileges associated
   # to the subscription plan.
+  #
+  # Redirects to the last invoice by default.
   def on_subscription_success
-    redirect_to(action: :index) 
+    current_customer.reload
+    redirect_to(invoice_subscriptions_path(current_customer.active_subscription.invoices.last.id))
   end
   
+  # Should be overriden to provide a response when the user account is reactivated.
+  #
+  # Defaults to a redirect to :index 
   def on_reactivation_success
     redirect_to(action: :index) 
   end

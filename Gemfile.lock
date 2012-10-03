@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    billingly (0.0.1)
+    billingly (0.1.0)
       has_duration
       rails (~> 3.2.0)
       validates_email_format_of

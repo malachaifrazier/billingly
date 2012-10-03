@@ -10,10 +10,10 @@ Gem::Specification.new do |s|
   s.authors     = ['Nubis']
   s.email       = ['nubis@woobiz.com.ar']
   s.homepage    = ""
-  s.summary     = "Engine for subscriptions billing - still alpha - contact me if you want to use it"
-  s.description = "Engine for subscriptions billing - still alpha - contact me if you want to use it"
+  s.summary     = "Rails Engine for SaaS subscription management"
+  s.description = "Rails Engine for SaaS subscription management"
 
-  s.files = Dir["{app,config,db,lib}/**/*"] + ["MIT-LICENSE", "Rakefile", "README.rdoc"]
+  s.files = Dir["{app,config,db,lib}/**/*"] + ["MIT-LICENSE", "Rakefile", "README.md", "TUTORIAL.rdoc"]
 
   s.add_dependency "rails", "~> 3.2.0"
   s.add_dependency "validates_email_format_of"

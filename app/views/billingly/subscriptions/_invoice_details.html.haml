@@ -1,0 +1,9 @@
+%dl.dl-horizontal
+  %dt From
+  %dd= invoice.period_start.to_date
+  %dt To
+  %dd= invoice.period_end.to_date
+  %dt Due Date
+  %dd= invoice.due_on.to_date
+  %dt Amount
+  %dd= invoice.amount

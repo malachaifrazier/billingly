@@ -3,6 +3,7 @@ class ActionDispatch::Routing::Mapper
     route = lambda do 
       resources :subscriptions, controller: controller, only: [:index, :create] do
         collection do
+          match 'invoice/:invoice_id' => :invoice, as: :invoice
           post :reactivate
           post :deactivate
         end

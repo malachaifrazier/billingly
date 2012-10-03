@@ -17,11 +17,6 @@ describe Billingly::SubscriptionsController do
     end
   end
   
-  it 'has a callback for successful subscription creation' do
-    controller.should_receive(:redirect_to).with action: :index
-    controller.on_subscription_success
-  end
-
   describe 'when customer logged in' do
     before(:each) do
       controller.stub current_customer: customer
@@ -33,11 +28,24 @@ describe Billingly::SubscriptionsController do
       assigns(:subscription).should_not be_nil
     end
 
+    it 'should set the diactivation reason to be left_voluntarily when deactivating' do
+      customer.should_receive(:deactivate_left_voluntarily)
+      post :deactivate
+      response.should redirect_to(action: :index)
+    end
+  end
+  
+  describe 'when subscribing to a plan' do
+    before(:each) do
+      controller.stub current_customer: customer
+    end
+
     it 'subscribes a customer to a plan' do
-      plan = create :pro_50_monthly
-      customer.should_receive(:subscribe_to_plan).with(plan)
-      controller.should_receive :on_subscription_success
-      post :create, plan_id: plan.id
+      expect do 
+        plan = create :pro_50_monthly
+        post :create, plan_id: plan.id
+        response.should be_redirect
+      end.to change{ customer.active_subscription }
     end
     
     it 'does not let customer subscribe to a plan if they cant subscribe to it' do
@@ -50,16 +58,15 @@ describe Billingly::SubscriptionsController do
 
     it 'does not subscribe a customer to a bogus plan' do
       customer.should_not_receive(:subscribe_to_plan)
-      controller.should_not_receive :on_subscription_success
       expect do
         post :create, plan_id: 'blah'
       end.to raise_exception ActiveRecord::RecordNotFound
     end
-  
-    it 'should set the diactivation reason to be left_voluntarily when deactivating' do
-      customer.should_receive(:deactivate_left_voluntarily)
-      post :deactivate
-      response.should redirect_to(action: :index)
+
+    it 'redirects to the last invoice after subscription' do
+      plan = create :pro_50_monthly
+      post :create, plan_id: plan.id
+      response.should redirect_to(invoice_subscriptions_path(customer.invoices.last.id))
     end
   end
   
@@ -94,6 +101,44 @@ describe Billingly::SubscriptionsController do
       deactivated.should_receive(:reactivate).with(plan).and_return(deactivated)
       post :reactivate, plan_id: plan.id.to_s
       response.should redirect_to(action: :index)
+    end
+  end
+  
+  describe 'when showing an invoice details' do
+    it 'shows the invoice details' do
+      subscription = create(:first_year)
+      controller.stub current_customer: subscription.customer
+      get :invoice, invoice_id: subscription.invoices.last.id.to_s
+      assigns(:invoice).should == subscription.invoices.last
+      response.should be_ok
+    end
+
+    it 'requires a customer for showing an invoice' do
+      subscription = create(:first_year)
+      controller.stub current_customer: nil
+      get :invoice, invoice_id: subscription.invoices.last.id.to_s
+      response.should redirect_to(root_path)
+    end
+    
+    it 'does not need the customer to be active to see invoices' do
+      subscription = create(:first_year, customer: create(:deactivated_customer))
+      controller.stub current_customer: subscription.customer
+      get :invoice, invoice_id: subscription.invoices.last.id.to_s
+      response.should be_ok
+    end
+
+    it 'shows 404 when the invoice does not exist' do
+      subscription = create(:first_year)
+      controller.stub current_customer: subscription.customer
+      expect{ get :invoice, invoice_id: 'does-not-exist'}
+        .to raise_exception ActiveRecord::RecordNotFound
+    end
+    
+    it 'should never let you see someone elses invoice' do
+      subscription = create(:first_year)
+      controller.stub current_customer: create(:customer)
+      expect{ get :invoice, invoice_id: subscription.invoices.last.id.to_s}
+        .to raise_exception ActiveRecord::RecordNotFound
     end
   end
 end
