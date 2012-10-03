@@ -40,7 +40,13 @@ describe Billingly::SubscriptionsController do
       post :create, plan_id: plan.id
     end
     
-    pending 'does not let customer subscribe to a plan if they cant subscribe to it'
+    it 'does not let customer subscribe to a plan if they cant subscribe to it' do
+      plan = create :pro_50_monthly
+      customer.stub(can_subscribe_to?: false)
+      post :create, plan_id: plan.id
+      response.should redirect_to(subscriptions_path)
+      flash[:notice].should =~ /Cannot subscribe to that plan/ 
+    end
 
     it 'does not subscribe a customer to a bogus plan' do
       customer.should_not_receive(:subscribe_to_plan)

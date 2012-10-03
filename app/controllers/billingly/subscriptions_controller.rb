@@ -15,6 +15,9 @@ class Billingly::SubscriptionsController < ::ApplicationController
   # Subscribe the customer to a plan, or change his current plan.
   def create
     plan = Billingly::Plan.find(params[:plan_id])
+    unless current_customer.can_subscribe_to?(plan)
+      return redirect_to subscriptions_path, notice: 'Cannot subscribe to that plan'
+    end
     current_customer.subscribe_to_plan(plan)
     on_subscription_success
   end
