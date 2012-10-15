@@ -78,7 +78,7 @@ describe Billingly::Customer do
     pending
   end
   
-  it 'keeps the plan when resubscribing to the same subscription' do
+  it 'keeps the plan when resubscribing to another subscription' do
     pending
   end
   
@@ -93,7 +93,7 @@ describe Billingly::Customer do
 
     it 'terminates the old subscription' do
       subscription = create(:first_month)
-      Billingly::Subscription.any_instance.should_receive(:terminate)
+      Billingly::Subscription.any_instance.should_receive(:terminate_changed_subscription)
       subscription.customer.subscribe_to_plan(build(:pro_50_yearly))
     end
     
@@ -115,7 +115,7 @@ describe Billingly::Customer do
 
     it 'Settles oldest invoice when receiving a payment' do
       customer = create(:first_month).customer
-      Billingly::Invoice.should_receive(:charge_all).with(customer.invoices)
+      customer.should_receive(:charge_pending_invoices)
       customer.credit_payment(200.0)
     end
     
@@ -167,11 +167,17 @@ describe Billingly::Customer do
       create(:first_year, :deactivated).customer.deactivate_debtor.should be_nil
     end
     
-    [:debtor, :trial_expired, :left_voluntarily].each do |reason|
+    %w(debtor trial_expired left_voluntarily).each do |reason|
       it "has a shortcut for deactivating using #{reason}" do
         customer = create(:first_year).customer.send("deactivate_#{reason}")
         customer.should_not be_nil
-        customer.deactivation_reason.should == reason.to_sym
+        customer.deactivation_reason.should == reason
+      end
+      
+      it "when deactivating because #{reason} the subscription is ended because #{reason} too" do
+        customer = create(:first_year).customer.send("deactivate_#{reason}")
+        customer.should_not be_nil
+        customer.subscriptions.last.unsubscribed_because.should == reason
       end
     end
     
@@ -209,49 +215,6 @@ describe Billingly::Customer do
     end
   end
   
-  describe 'deactivating a debtors' do
-    it 'mass deactivates customers who missed a due-date' do
-      subscription = create(:first_year, :overdue)
-
-      expect do
-        expect do
-          Billingly::Customer.deactivate_all_debtors
-          subscription.reload
-        end.to change{ subscription.terminated? }
-      end.to change{ subscription.customer.deactivated? }
-
-      subscription.customer.deactivated_since.utc.to_s.should == Time.now.utc.to_s
-      subscription.customer.deactivation_reason.should == 'debtor'
-    end
-  
-    it 'does not mass re-deactivate already deactivated debtors' do
-      subscription = create(:first_year, :overdue, :deactivated)
-      expect do
-        expect do
-          Billingly::Customer.deactivate_all_debtors
-          subscription.reload
-        end.not_to change{ subscription.terminated? }
-      end.not_to change{ subscription.customer.deactivated? }
-    end
-  end
-  
-  describe 'when deactivating trials' do
-    it 'deactivates overdue trials' do
-      one = create(:trial, is_trial_expiring_on: 10.days.ago)
-      two = create(:trial, customer: create(:customer))
-      three = create(:trial, is_trial_expiring_on: 10.days.ago, customer: create(:customer))
-      three.customer.subscribe_to_plan(build(:pro_50_monthly))
-      Billingly::Customer.deactivate_all_expired_trials
-      one.reload
-      two.reload
-      three.reload
-      one.customer.should be_deactivated
-      one.customer.deactivation_reason.should == 'trial_expired'
-      two.customer.should_not be_deactivated
-      three.customer.should_not be_deactivated
-    end
-  end
-  
   describe 'when customer is on trial' do
     it 'is on trial period' do
       create(:trial).customer.should be_doing_trial
@@ -278,7 +241,7 @@ describe Billingly::Customer do
       before :each do
         @customer = create(:first_year, :overdue, :deactivated).customer
         Billingly::Payment.credit_for(@customer, 200)
-        Billingly::Invoice.charge_all(@customer.invoices)
+        @customer.charge_pending_invoices
       end
 
       it 'reactivates immediately' do
@@ -298,7 +261,7 @@ describe Billingly::Customer do
         old = @customer.subscriptions.last
         expect do
           @customer.reactivate(create(:pro_50_monthly)).should_not be_nil
-        end.to change{ @customer.active_subscription.description }
+        end.to change{ @customer.subscriptions.last.description }
       end
 
       it 'uses the same old plan if not providing a new plan to reactivate to' do
@@ -341,6 +304,60 @@ describe Billingly::Customer do
       plan = create(:pro_100_yearly)
       customer.subscribe_to_plan(plan)
       customer.can_subscribe_to?(plan).should be_false
+    end
+  end
+  
+  describe 'when charging pending invoices' do
+    let(:customer){ create(:first_month).customer }
+    it 'should charge all unpaid invoices' do
+      Billingly::Customer.any_instance.stub(ledger: {cash: 300})
+
+      expect do
+        customer.charge_pending_invoices
+      end.to change{ customer.invoices.where(paid_on: nil).count }.by(-1)
+    end
+    
+    it 'should not settle invoice if customer does not have enough money in balance' do
+      expect do
+        customer.charge_pending_invoices
+      end.not_to change{ customer.invoices.where(paid_on: nil).count }
+    end
+    
+    it 'should settle oldest invoice first' do
+      subscription = customer.active_subscription
+      Timecop.travel 1.month.from_now
+      oldest = subscription.invoices.first
+      latest = subscription.generate_next_invoice
+
+      # We credit the customer balance after creating the second invoice, because
+      # 'generate_next_invoice' will charge it immediately otherwise.
+      subscription.customer.add_to_journal(10, :cash)
+  
+      customer.charge_pending_invoices
+      oldest.reload
+      oldest.should be_paid
+
+      latest.reload
+      latest.should_not be_paid
+    end
+    
+    it 'should not settle later invoices if the prior ones have been settled' do 
+      subscription = customer.active_subscription
+      Timecop.travel 1.month.from_now
+      oldest = subscription.invoices.first
+      oldest.update_attribute(:amount, 1000)
+      latest = subscription.generate_next_invoice
+
+      # We credit the customer balance after creating the second invoice, because
+      # 'generate_next_invoice' will charge it immediately otherwise.
+      subscription.customer.add_to_journal(10, :cash)
+  
+      customer.charge_pending_invoices
+      oldest.reload
+      oldest.should_not be_paid
+
+      latest.reload
+      latest.should_not be_paid
     end
   end
 end

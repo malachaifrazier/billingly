@@ -66,18 +66,21 @@ ActiveRecord::Schema.define(:version => 20120928205624) do
   end
 
   create_table "billingly_subscriptions", :force => true do |t|
-    t.integer  "customer_id",                                                            :null => false
-    t.string   "description",                                                            :null => false
-    t.datetime "subscribed_on",                                                          :null => false
-    t.string   "periodicity",                                                            :null => false
-    t.string   "grace_period",                                                           :null => false
-    t.boolean  "payable_upfront",                                     :default => false, :null => false
-    t.decimal  "amount",               :precision => 11, :scale => 2, :default => 0.0,   :null => false
+    t.integer  "customer_id",                                                                     :null => false
+    t.string   "description",                                                                     :null => false
+    t.datetime "subscribed_on",                                                                   :null => false
+    t.string   "periodicity",                                                                     :null => false
+    t.string   "grace_period",                                                                    :null => false
+    t.boolean  "payable_upfront",                                              :default => false, :null => false
+    t.decimal  "amount",                        :precision => 11, :scale => 2, :default => 0.0,   :null => false
     t.datetime "unsubscribed_on"
+    t.string   "unsubscribed_because"
     t.datetime "is_trial_expiring_on"
+    t.boolean  "notified_trial_will_expire_on"
+    t.boolean  "notified_trial_expired_on"
     t.integer  "plan_id"
-    t.datetime "created_at",                                                             :null => false
-    t.datetime "updated_at",                                                             :null => false
+    t.datetime "created_at",                                                                      :null => false
+    t.datetime "updated_at",                                                                      :null => false
   end
 
 end

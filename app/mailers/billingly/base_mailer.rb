@@ -1,5 +1,8 @@
-class BillinglyMailer < ActionMailer::Base
+class Billingly::BaseMailer < ActionMailer::Base
   default from: 'example@example.com'
+  
+  cattr_accessor :admin_emails
+  self.admin_emails = 'admin@example.com'
 
   def pending_notification(invoice)
     @invoice = invoice
@@ -16,5 +19,17 @@ class BillinglyMailer < ActionMailer::Base
   def paid_notification(invoice)
     @invoice = invoice
     mail(to: invoice.customer.email, subject: I18n.t('billingly.payment_receipt'))
+  end
+  
+  def task_results(runner)
+    @runner = runner
+    mail to: self.class.admin_emails, subject: "Your Billingly Status Report"
+  end
+  
+  # Sends the email about an expired trial.
+  # param trial [Subscription] a trial which should be expired.
+  def trial_expired_notification(subscription)
+    @subscription = subscription
+    mail to: subscription.customer.email, subject: I18n.t('billingly.your_trial_has_expired')
   end
 end

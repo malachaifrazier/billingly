@@ -134,52 +134,6 @@ describe Billingly::Invoice do
     end
   end
 
-  describe 'batch charging invoices' do
-    it 'should charge all unpaid invoices' do
-      Billingly::Customer.any_instance.stub(ledger: {cash: 300})
-      3.times{ create(:first_month, customer: create(:customer)) }
-      Billingly::Invoice.first.charge
-
-      expect do
-        Billingly::Invoice.charge_all
-      end.to change{ Billingly::Invoice.where(paid_on: nil).count }.by(-2)
-    end
-    
-    it 'should charge all unpaid invoices for a specific customer' do
-      Billingly::Customer.any_instance.stub(ledger: {cash: 300})
-      3.times{ create(:first_month, customer: create(:customer)) }
-
-      expect do
-        Billingly::Invoice.charge_all(Billingly::Customer.first.invoices)
-      end.to change{ Billingly::Invoice.where(paid_on: nil).count }.by(-1)
-    end
-    
-    it 'should not settle invoice if customer does not have enough money in balance' do
-      create(:first_month)
-      expect do
-        Billingly::Invoice.charge_all
-      end.not_to change{ Billingly::Invoice.where(paid_on: nil).count }
-    end
-    
-    it 'should settle oldest invoice first' do
-      subscription = create(:first_month)
-      Timecop.travel 1.month.from_now
-      oldest = subscription.invoices.first
-      latest = subscription.generate_next_invoice
-
-      # We credit the customer balance after creating the second invoice, because
-      # 'generate_next_invoice' will charge it immediately otherwise.
-      subscription.customer.add_to_journal(10, :cash)
-  
-      Billingly::Invoice.charge_all
-      oldest.reload
-      oldest.should be_paid
-
-      latest.reload
-      latest.should_not be_paid
-    end
-  end
-  
   describe 'when notifying pending invoices' do
     it 'notifies about unpaid invoices at the start of their grace period' do
       invoice
@@ -213,19 +167,6 @@ describe Billingly::Invoice do
       invoice.update_attribute(:deleted_on, Time.now)
       should_not_email(:pending_notification)
       invoice.notify_pending
-    end
-    
-    it 'notifies all pending invoices' do
-      create(:first_month) # This one is not due until a month from now
-      invoice = create(:first_year).invoices.last # This one should be invoiced as it is due soon
-      expect do
-        Billingly::Invoice.notify_all_pending
-      end.to change{ ActionMailer::Base.deliveries.count }.by(1)
-      invoice.reload
-      invoice.notified_pending_on.should_not be_nil
-      Billingly::Invoice
-        .where(paid_on: nil, notified_pending_on: nil)
-        .where('due_on < ?', 20.days.from_now).count.should == 0
     end
   end
 
@@ -264,20 +205,6 @@ describe Billingly::Invoice do
       should_not_email(:overdue_notification)
       invoice.notify_overdue
     end
-
-    it 'notifies all overdue invoices' do
-      create(:first_month) # This one is not due until a month from now
-      invoice = create(:first_year).invoices.last # This one should be invoiced as it is due soon
-      Timecop.travel 20.days.from_now
-      expect do
-        Billingly::Invoice.notify_all_overdue
-      end.to change{ ActionMailer::Base.deliveries.count }.by(1)
-      invoice.reload
-      invoice.notified_overdue_on.should_not be_nil
-      Billingly::Invoice
-        .where(paid_on: nil, notified_overdue_on: nil)
-        .where('due_on < ?', Time.now).count.should == 0
-    end
   end
 
   describe 'when notifying paid invoices' do
@@ -306,19 +233,6 @@ describe Billingly::Invoice do
       invoice.update_attribute(:deleted_on, Time.now)
       should_not_email(:paid_notification)
       invoice.notify_paid
-    end
-
-    it 'notifies all paid invoices' do
-      invoice = create(:first_year).invoices.first # This one should be paid
-      create(:first_year, customer: create(:customer)) 
-      invoice.customer.credit_payment(100.0)
-      expect do
-        Billingly::Invoice.notify_all_paid
-      end.to change{ ActionMailer::Base.deliveries.count }.by(1)
-      invoice.reload
-      invoice.notified_paid_on.should_not be_nil
-      Billingly::Invoice
-        .where('paid_on IS NOT NULL AND notified_paid_on IS NULL').count.should == 0
     end
   end
 end

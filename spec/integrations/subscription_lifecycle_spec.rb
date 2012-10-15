@@ -62,26 +62,73 @@ describe 'SubscriptionLifecycle' do
     end
     
     it 'Customer leaves the site before paying their last invoice, which was not due yet' do
-      pending
+      # This example shows that if an invoice becomes overdue after the customer
+      # voluntarily cancelled his subscrption, they still need to pay in order to
+      # reactivate their account.
+      customer = create(:first_year).customer
+      days_go_by 1
+      customer.deactivate_left_voluntarily
+      customer.should_not be_debtor
+      days_go_by 30
+      customer.reload
+      customer.should be_debtor
+      customer.reactivate.should be_nil
+      days_go_by 1
+      customer.reload
+      customer.credit_payment(200)
+      customer.reactivate.should_not be_nil
     end
     
     it 'Customer subscribed but never paid not even his first invoice' do
-      pending
+      # This example shows that customers who subscribe to a plan and
+      # don't even pay their first invoice are deactivated too.
+      customer = create(:first_year).customer
+      days_go_by 20
+      customer.reload
+      customer.should be_debtor
+      customer.should be_deactivated
     end
 
     it 'Customer missed a payment but then returned to the site and paid' do
-      pending
+      # This example shows how a customer who missed a payment can pay
+      # and get his account reactivated.
+      customer = create(:first_year).customer
+      days_go_by 20
+      customer.credit_payment(200)
+      customer.reload
+      customer.reactivate.should_not be_nil
     end
     
-    it 'Customer who was disabled pays her debt but re-joins to a different' do
-      pending
+    it 'Customer who was disabled pays her debt but rectivates to a different plan' do
+      # This example shows how a customer can deactivate her account then come back
+      # and reactivate to a different plan
+      customer = create(:first_year).customer
+      days_go_by 20
+      customer.credit_payment(200)
+      customer.reload
+      customer.reactivate(build(:pro_100_monthly)).should_not be_nil
     end
   
     it 'Customer signs up for a trial and upgrades before trial ends' do
-      pending
+      # This example shows a customer who starts on a trial and then upgrades before
+      # trial ends. Her account never reaches the deactivated state.
+      customer = create(:trial).customer
+      days_go_by 10
+      customer.subscribe_to_plan(build(:pro_100_monthly))
+      customer.should_not be_doing_trial
     end
     
     it 'Customer signs up for a trial and upgrades after trial ends' do
+      # This example shows a customer who had a trial period that expired,
+      # then re-joined the site.
+      customer = create(:trial).customer
+      days_go_by 20
+      customer.reload
+      customer.should be_deactivated
+      days_go_by 10
+      customer.reactivate(build(:pro_100_monthly))
+      customer.should_not be_doing_trial
+      customer.should_not be_deactivated
     end
   end
 end

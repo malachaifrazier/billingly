@@ -55,38 +55,13 @@ module Billingly
       return self
     end
 
-    # Charges all invoices that can be charged from the existing customer cash balances
-    def self.charge_all(collection = self)
-      collection.where(deleted_on: nil, paid_on: nil).order('period_start').each do |invoice|
-        invoice.charge
-      end
-    end
-    
-    # This method is called by Billingly's recurring task to notify all pending invoices.
-    def self.notify_all_pending
-      where(deleted_on: nil, paid_on: nil, notified_pending_on: nil)
-        .each do |invoice|
-          invoice.notify_pending
-        end
-    end
-
     def notify_pending
       return unless notified_pending_on.nil?
       return if paid?
       return if deleted?
       return if due_on > subscription.grace_period.from_now
-      BillinglyMailer.pending_notification(self).deliver!
+      Billingly::Mailer.pending_notification(self).deliver!
       update_attribute(:notified_pending_on, Time.now)
-    end
-
-    # Send the email notifying that this invoice being overdue and the subscription
-    # being cancelled
-    def self.notify_all_overdue
-      where('due_on <= ?', Time.now)
-        .where(deleted_on: nil, paid_on: nil, notified_overdue_on: nil)
-        .each do |invoice|
-          invoice.notify_overdue
-        end
     end
 
     def notify_overdue
@@ -94,25 +69,15 @@ module Billingly
       return if paid?
       return if deleted?
       return if due_on > Time.now
-      BillinglyMailer.overdue_notification(self).deliver!
+      Billingly::Mailer.overdue_notification(self).deliver!
       update_attribute(:notified_overdue_on, Time.now)
-    end
-
-    # Notifies that the invoice has been charged successfully.
-    # Send the email notifying that this invoice being overdue and the subscription
-    # being cancelled
-    def self.notify_all_paid
-      where('paid_on is not null')
-        .where(deleted_on: nil, notified_paid_on: nil).each do |invoice|
-          invoice.notify_paid
-        end
     end
 
     def notify_paid
       return unless paid?
       return unless notified_paid_on.nil?
       return if deleted?
-      BillinglyMailer.paid_notification(self).deliver!
+      Billingly::Mailer.paid_notification(self).deliver!
       update_attribute(:notified_paid_on, Time.now)
     end
   end

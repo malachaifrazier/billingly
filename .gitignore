@@ -1,7 +1,10 @@
 *.swp
+**/*.swp
 .bundle/
 log/*.log
 pkg/
+doc
+.yardoc
 spec/dummy/log/*.log
 spec/dummy/tmp/
 spec/dummy/.sass-cache

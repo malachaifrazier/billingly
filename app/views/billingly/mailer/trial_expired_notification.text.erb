@@ -1,0 +1,4 @@
+<%= t( 'billingly.your_trial_has_expired_please_choose_a_plan') % { end_date: @subscription.unsubscribed_on.to_date} %>
+
+<%=t 'billingly.please_visit' %> <%= url_for subscriptions_path %>
+

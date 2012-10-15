@@ -51,7 +51,7 @@ describe Billingly::Subscription do
     end
     
     it 'should not generate an invoice for a terminated subscription' do
-      subscription = create(:fourth_month, unsubscribed_on: 1.day.ago)
+      subscription = create(:expired_trial)
       expect do
         subscription.generate_next_invoice.should be_nil
       end.not_to change{ subscription.invoices.count }
@@ -82,9 +82,9 @@ describe Billingly::Subscription do
   end
   
   describe 'when terminating a subscription' do
-    it 'sets the terminated_on date' do
+    it 'sets the unsubscribed_on date' do
       subscription = create(:first_month)
-      subscription.terminate
+      subscription.terminate_left_voluntarily
       subscription.unsubscribed_on.utc.to_s.should == Time.now.utc.to_s
     end
     
@@ -92,26 +92,43 @@ describe Billingly::Subscription do
       subscription = create(:first_month)
       first_invoice = subscription.generate_next_invoice
       Billingly::Invoice.any_instance.should_receive(:truncate)
-      subscription.terminate
+      subscription.terminate_debtor
     end
     
     it 'does not terminate an already terminated subscription' do
       subscription = create(:first_month)
-      subscription.terminate.should_not be_nil
-      subscription.terminate.should be_nil
+      subscription.terminate_debtor.should_not be_nil
+      subscription.terminate_debtor.should be_nil
     end
-  end
-  
-  it 'generates invoices for all the subscriptions that do not have their next invoice yet' do
-    3.times{ create(:first_month, customer: create(:customer)) }
     
-    Timecop.travel 1.month.from_now
+    it 'validates terminated subscriptions have a deactivation reason' do
+      subscription = build(:first_month, unsubscribed_on: Time.now)
+      subscription.should_not be_valid
+      subscription.errors.should have_key(:unsubscribed_because)
+    end
+    
+    it 'validates that subscription with an unsubscribed_before have an unsubscribed_on date' do
+      subscription = build(:first_month, unsubscribed_because: :debtor)
+      subscription.should_not be_valid
+      subscription.errors.should have_key(:unsubscribed_on)
+    end
 
-    Billingly::Subscription.first.generate_next_invoice
-    
-    expect do
-      Billingly::Subscription.generate_next_invoices
-    end.to change{ Billingly::Invoice.count }.by(2)
+    it 'is valid if both unsubscribed date and reason are empty' do
+      build(:first_month).should be_valid
+    end
+
+    it 'validates the unsubscribed reason to be one of the preset ones' do
+      build(:first_month, unsubscribed_on: Time.now, unsubscribed_because: :bogus)
+        .should_not be_valid
+    end
+
+    %w(trial_expired debtor changed_subscription left_voluntarily).each do |reason|
+      it "has a shortcut for terminating using #{reason}" do
+        subscription = create(:first_year).send("terminate_#{reason}")
+        subscription.should_not be_nil
+        subscription.unsubscribed_because.should == reason
+      end
+    end
   end
   
   describe 'when doing a trial period' do
@@ -125,6 +142,46 @@ describe Billingly::Subscription do
       expect do
         subscription.generate_next_invoice.should be_nil
       end.not_to change{ subscription.invoices.count }
+    end
+  end
+  
+  describe 'when notifying a finished trial period' do
+    it 'notifies a trial that has expired' do
+      trial = create(:expired_trial)
+      expect do
+        trial.notify_trial_expired.should_not be_nil
+      end.to change{ ActionMailer::Base.deliveries.size }.by(1)
+    end
+    
+    it 'only notifies trial periods which have expired' do
+      trial = create(:trial)
+      expect do
+        trial.notify_trial_expired.should be_nil
+      end.not_to change{ ActionMailer::Base.deliveries.size }
+    end
+
+    it 'does not notify subscriptions which are not trials' do
+      subscription = create(:first_month)
+      Timecop.travel 2.months.from_now
+      expect do
+        subscription.notify_trial_expired.should be_nil
+      end.not_to change{ ActionMailer::Base.deliveries.size }
+      subscription.notified_trial_expired_on.should be_nil
+    end
+    
+    it 'does not notify if customer is not deactivated b/c of trial_expired' do
+      trial = create(:abandoned_trial)
+      expect do
+        trial.notify_trial_expired.should be_nil
+      end.not_to change{ ActionMailer::Base.deliveries.size }
+    end
+    
+    it 'does not notify if already notified' do
+      trial = create(:expired_trial)
+      trial.notify_trial_expired.should_not be_nil
+      expect do
+        trial.notify_trial_expired.should be_nil
+      end.not_to change{ ActionMailer::Base.deliveries.size }
     end
   end
 end

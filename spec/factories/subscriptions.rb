@@ -10,6 +10,15 @@ FactoryGirl.define do
       description 'Free trial for monthly subscription for 9.9'
       amount BigDecimal.new('9.9')
       payable_upfront false
+
+      factory :expired_trial do
+        is_trial_expiring_on Time.now
+        unsubscribed_on Time.now
+        unsubscribed_because 'trial_expired'
+        factory :abandoned_trial do
+          unsubscribed_because 'left_voluntarily'
+        end
+      end
     end
     
     factory :monthly do
@@ -75,6 +84,8 @@ FactoryGirl.define do
 
         trait :deactivated do
           association :customer, factory: :deactivated_customer
+          unsubscribed_on Time.now
+          unsubscribed_because 'debtor'
         end
 
         after :create do |it, _|

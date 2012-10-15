@@ -21,7 +21,7 @@ module Billingly
     # we won't try to reactivate their account when we receive a payment from them.
     # The message shown to them when they reactivate will also be different depending on
     # how they left.
-    DEACTIVATION_REASONS = [:trial_expired, :debtor, :left_voluntarily]
+    DEACTIVATION_REASONS = %w(trial_expired debtor left_voluntarily)
 
     # The Date and Time in which the Customer's account was deactivated (see {#deactivated?}).
     # This field denormalizes the date in which this customer's last subscription was ended.
@@ -115,7 +115,7 @@ module Billingly
     # @param [Plan, Subscription] 
     # @return [Subscription] The newly created {Subscription}
     def subscribe_to_plan(plan, is_trial_expiring_on = nil) 
-      subscriptions.last.terminate if subscriptions.last
+      subscriptions.last.terminate_changed_subscription if subscriptions.last
 
       subscriptions.build.tap do |new|
         [:payable_upfront, :description, :periodicity,
@@ -173,12 +173,6 @@ module Billingly
       end
     end
     
-    # This method will deactivate all customers who have overdue {Invoice Invoices}.
-    # It's run periodically through Billingly's Rake Task.
-    def self.deactivate_all_debtors
-      debtors.where(deactivated_since: nil).all.each{|debtor| debtor.deactivate_debtor }
-    end
-    
     # A customer who has overdue invoices at the time of asking this question is
     # considered a debtor.
     #
@@ -210,8 +204,8 @@ module Billingly
     # @param amount [BigDecimal, float] the amount to be credited.
     def credit_payment(amount)
       Billingly::Payment.credit_for(self, amount)
-      Billingly::Invoice.charge_all(self.invoices)
-      reactivate if deactivated? && deactivation_reason == :debtor
+      charge_pending_invoices
+      reactivate if deactivated? && deactivation_reason == 'debtor'
     end
     
     # Terminate a customer's subscription to the service.
@@ -226,10 +220,10 @@ module Billingly
     # @return [self, nil] nil if the account was already deactivated, self otherwise.
     def deactivate(reason)
       return if deactivated?
-      active_subscription.terminate
+      active_subscription.terminate(reason)
       self.deactivated_since = Time.now
       self.deactivation_reason = reason
-      self.save!
+      save!
       return self
     end
     
@@ -241,17 +235,17 @@ module Billingly
 
     # @see #deactivate
     def deactivate_left_voluntarily
-      deactivate(:left_voluntarily)
+      deactivate('left_voluntarily')
     end
     
     # @see #deactivate
     def deactivate_trial_expired
-      deactivate(:trial_expired)
+      deactivate('trial_expired')
     end
 
     # @see #deactivate
     def deactivate_debtor
-      deactivate(:debtor)
+      deactivate('debtor')
     end
 
     # Customers whose account has been {#deactivate deactivated} can always re-join the service
@@ -266,25 +260,18 @@ module Billingly
       subscribe_to_plan(new_plan)
       return self
     end
-
-    # Customers may be subscribed for a trial period, and they are supposed to re-subscribe
-    # before their trial expires.
+    
+    # Charges all invoices for which the customer has enough balance.
+    # Oldest invoices are charged first, newer invoices should not be charged until
+    # the oldest ones are paid.
     #
-    # When their trial expires and they have not yet subscribed to another plan, we
-    # deactivate their account immediately.
-    #
-    # This method will deactivate all customers whose trial has expired.
-    # It's run periodically through Billingly's Rake Task.
-    def self.deactivate_all_expired_trials
-       customers = joins(:subscriptions).readonly(false)
-        .where("#{Billingly::Subscription.table_name}.is_trial_expiring_on < ?", Time.now)
-        .where(billingly_subscriptions: {unsubscribed_on: nil})
-        
-      customers.each do |customer|
-        customer.deactivate_trial_expired
-      end
+    # See {Billingly::Invoice#charge Invoice#charge} for more information
+    # on how invoices are charged from the customer's balance.
+    def charge_pending_invoices
+      invoices.where(deleted_on: nil, paid_on: nil).order('period_start')
+        .each{|invoice| break unless invoice.charge}
     end
-
+    
     # Can this customer subscribe to a plan?.
     # You may want to prevent customers from upgrading or downgrading to other plans
     # depending on their usage of your service.

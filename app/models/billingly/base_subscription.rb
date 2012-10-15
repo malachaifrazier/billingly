@@ -25,7 +25,38 @@ module Billingly
     # @property subscribed_on
     # @return [DateTime]
     validates :subscribed_on, presence: true
+    
+    # Subscriptions are terminated for a reason which could be:
+    #   * trial_expired: Subscription was a trial and it just expired.
+    #   * debtor: The customer owed an invoice for this subscription and did not pay.
+    #   * changed_subscription: This subscription was immediately replaced by another one.
+    #   * left_voluntarily: This subscription was terminated because the customer left.
+    #
+    # TERMINATION_REASONS are important for auditing and for the mailing tasks to notify
+    # about subscriptions terminated automatically by the system.
+    TERMINATION_REASONS = %w(trial_expired debtor changed_subscription left_voluntarily)
 
+    # The date in which this subscription ended.
+    #
+    # Every ended subscription ended for a reason, look at {TERMINATION_REASONS}.
+    # @property unsubscribed_on
+    # @return [DateTime]
+    validates :unsubscribed_on, presence: true, if: :unsubscribed_because
+
+    # The reason why this subscription ended.
+    #
+    # Every ended subscription ended for a reason, look at {TERMINATION_REASONS}.
+    # @property unsubscribed_because
+    # @return [DateTime]
+    validates :unsubscribed_because, inclusion: TERMINATION_REASONS, if: :terminated?
+
+    # Was this subscription terminated?
+    # @property [r] terminated?
+    # @return [Boolean] Whether the subscription was terminated or not.
+    def terminated?
+      not unsubscribed_on.nil?
+    end
+    
     # The grace period we use when calculating an invoices due date.
     # If a subscription is payable_upfront, then the customer effectively owes us
     # since the day in which a given period starts.
@@ -58,7 +89,7 @@ module Billingly
     belongs_to :plan
     
     # (see #is_trial_expiring_on)
-    # @property trial?
+    # @property [r] trial?
     # @return [Boolean]
     def trial?
       not is_trial_expiring_on.nil?
@@ -95,24 +126,38 @@ module Billingly
     
     # Terminates this subscription, it could be either because we deactivate a debtor
     # or because the customer decided to end his subscription on his own terms.
-    def terminate
+    #
+    # Use the shortcuts:
+    #   {#terminate_left_voluntarily}, {#terminate_trial_expired},
+    #   {#terminate_debtor}, {#terminate_changed_subscription}
+    # 
+    # Once terminated, a subscription cannot be re-open, just create a new one.
+    # @param reason [Symbol] the reason to terminate this subscription, see {TERMINATION_REASONS}
+    # @return [self, nil] nil if the account was already terminated, self otherwise.
+    def terminate(reason)
       return if terminated?
-      update_attribute(:unsubscribed_on, Time.now)
+      self.unsubscribed_on = Time.now
+      self.unsubscribed_because = reason
       invoices.last.truncate unless trial?
+      save!
       return self
     end
-    
-    def terminated?
-      not unsubscribed_on.nil?
+
+    TERMINATION_REASONS.each do |reason|
+      define_method("terminate_#{reason}") do
+        terminate(reason)
+      end
     end
     
-    # This class method is called from a cron job, it creates invoices for all the subscriptions
-    # that still need their invoice created.
-    # TODO: This goes through all the active subscriptions, make it smarter so that the batch job runs quicker.
-    def self.generate_next_invoices
-      where(is_trial_expiring_on: nil, unsubscribed_on: nil).each do |subscription|
-        subscription.generate_next_invoice
-      end
+    # When a trial subscription ends the customer is notified about it via email.
+    # @return [self, nil] not nil means the notification was sent successfully.
+    def notify_trial_expired
+      return unless trial?
+      return unless terminated? && unsubscribed_because == 'trial_expired'
+      return unless notified_trial_expired_on.nil?
+      Billingly::Mailer.trial_expired_notification(self).deliver!
+      update_attribute(:notified_trial_expired_on, Time.now)
+      return self
     end
   end
 end

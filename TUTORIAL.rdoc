@@ -58,7 +58,7 @@ Continuing with the previous example, this snippet adds a user association to th
       
       # Return false signifies that the user cannot subscribe to the provided plan
       # if the current plan has a larger storage quota.
-      def can_subscribe_to(plan)
+      def can_subscribe_to?(plan)
         current_plan = active_subscription.plan
         if current_plan && current_plan.user_quota > plan.user_quota
           return false

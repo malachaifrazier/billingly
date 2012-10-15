@@ -46,7 +46,10 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.boolean 'payable_upfront', null: false, default: false
       t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false
       t.datetime 'unsubscribed_on'
+      t.string 'unsubscribed_because'
       t.datetime 'is_trial_expiring_on'
+      t.datetime 'notified_trial_will_expire_on'
+      t.datetime 'notified_trial_expired_on'
       t.references :plan
       t.timestamps
     end
