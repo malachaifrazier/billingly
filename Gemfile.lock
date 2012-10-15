@@ -154,7 +154,7 @@ DEPENDENCIES
   has_duration
   jquery-rails
   less
-  rails
+  rails (~> 3.2.0)
   rspec-rails
   sqlite3
   thin
