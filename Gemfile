@@ -19,3 +19,5 @@ gem "timecop"
 
 # To use debugger
 gem 'debugger'
+
+gem 'unicorn'
