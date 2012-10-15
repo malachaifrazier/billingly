@@ -5,16 +5,14 @@ source "http://rubygems.org"
 # development dependencies will be added by default to the :development group.
 # gemspec
 
+gem 'rails'
+gem 'validates_email_format_of'
+gem 'has_duration'
+
 group :development, :test do
  gem "rspec-rails"
  gem "factory_girl_rails"
  gem "sqlite3"
-end
-
-group :production do
-  gem 'rails'
-  gem 'validates_email_format_of'
-  gem 'has_duration'
 end
 
 # jquery-rails is used by the dummy application
