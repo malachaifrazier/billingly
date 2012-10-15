@@ -1,5 +1,7 @@
 # Billingly
 
+![Travis Build Status](https://secure.travis-ci.org/nubis/billingly.png)
+
 Billingly is a rails 3 engine that manages paid subscriptions and free trials to your web application. 
 
 Billingly can:
