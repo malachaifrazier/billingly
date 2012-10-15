@@ -7,7 +7,7 @@ source "http://rubygems.org"
 
 gem 'rails', "~> 3.2.0"
 gem 'validates_email_format_of'
-gem 'has_duration'
+gem 'has_duration', '0.0.3'
 
 group :development, :test do
  gem "rspec-rails"

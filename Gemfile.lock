@@ -58,7 +58,7 @@ GEM
       factory_girl (~> 4.1.0)
       railties (>= 3.0.0)
     haml (3.1.7)
-    has_duration (0.0.2)
+    has_duration (0.0.3)
       rails (~> 3.2)
     hike (1.2.1)
     i18n (0.6.1)
@@ -151,7 +151,7 @@ DEPENDENCIES
   debugger
   factory_girl_rails
   haml
-  has_duration
+  has_duration (= 0.0.3)
   jquery-rails
   less
   rails (~> 3.2.0)
