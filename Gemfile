@@ -8,11 +8,11 @@ source "http://rubygems.org"
 gem 'rails', "~> 3.2.0"
 gem 'validates_email_format_of'
 gem 'has_duration', '0.0.3'
+gem 'pg'
 
 group :development, :test do
  gem "rspec-rails"
  gem "factory_girl_rails"
- gem "sqlite3"
 end
 
 # jquery-rails is used by the dummy application
