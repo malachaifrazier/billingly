@@ -1,11 +1,3 @@
-PATH
-  remote: .
-  specs:
-    billingly (0.1.2)
-      has_duration
-      rails (~> 3.2.0)
-      validates_email_format_of
-
 GEM
   remote: http://rubygems.org/
   specs:
@@ -155,15 +147,17 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  billingly!
   coffee-rails
   debugger
   factory_girl_rails
   haml
+  has_duration
   jquery-rails
   less
+  rails
   rspec-rails
   sqlite3
   thin
   timecop
   twitter-bootstrap-rails
+  validates_email_format_of
