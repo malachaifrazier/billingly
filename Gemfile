@@ -5,7 +5,7 @@ source "http://rubygems.org"
 # development dependencies will be added by default to the :development group.
 # gemspec
 
-gem 'rails'
+gem 'rails', "~> 3.2.0"
 gem 'validates_email_format_of'
 gem 'has_duration'
 
