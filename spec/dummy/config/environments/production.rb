@@ -30,6 +30,13 @@ Dummy::Application.configure do
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
   # config.force_ssl = true
 
+  STDOUT.sync = true
+
+  logger = Logger.new(STDOUT)
+  logger.level = 0 # Must be numeric here - 0 :debug, 1 :info, 2 :warn, 3 :error, and 4 :fatal
+  # NOTE:   with 0 you're going to get all DB calls, etc.
+
+  Rails.logger = Rails.application.config.logger = logger
   # See everything in the log (default is :info)
   # config.log_level = :debug
 
