@@ -19,7 +19,8 @@ test:
   encoding: unicode
   database: billingly_test
   pool: 5
-  username: billingly
+  host: localhost
+  username: postgres
   password:
 
 production:
