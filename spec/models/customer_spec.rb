@@ -226,8 +226,7 @@ describe Billingly::Customer do
     
     it 'has a shortcut for checking days left on trial' do
       customer = create(:trial).customer
-      Timecop.travel 10.days.from_now
-      customer.trial_days_left.should == 5
+      customer.trial_days_left.should == 15
     end
     
     it 'does not have any trial, hence no days left' do

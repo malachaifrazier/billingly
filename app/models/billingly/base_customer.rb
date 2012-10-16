@@ -101,7 +101,7 @@ module Billingly
     # @return [Integer] 
     def trial_days_left
       return unless doing_trial?
-      (active_subscription.is_trial_expiring_on.to_date - Date.today).to_i
+      (active_subscription.is_trial_expiring_on.to_date - Time.now.utc.to_date).to_i
     end
     
     # Customers subscribe to the service under certain conditions referred to as a {Plan},
