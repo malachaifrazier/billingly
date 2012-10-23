@@ -23,36 +23,4 @@ Gem::Specification.new do |s|
   s.add_development_dependency "sqlite3"
   s.add_development_dependency "rspec-rails"
   s.add_development_dependency "factory_girl_rails"
-
-  s.post_install_message = <<-END
-    If migrating from before 0.1.1 (unlikely), add the following migration:
-    
-    class UpdateSubscriptionFields < ActiveRecord::Migration
-      def up
-        add_column :billingly_subscriptions, :notified_trial_will_expire_on, :datetime
-        add_column :billingly_subscriptions, :notified_trial_expired_on, :datetime
-        add_column :billingly_subscriptions, :unsubscribed_because, :string
-        
-        Billingly::Subscription.where('unsubscribed_on IS NOT NULL').find_each do |s|
-          # Notice: You should pre-populate unsubscribed because
-          # with an appropriate value for each terminated subscription.
-          # 
-          reason = if s == s.customer.subscriptions.last && s.customer.deactivation_reason
-            s.deactivation_reason
-          elsif s.trial? && s.is_trial_expiring_on <= s.unsubscribed_on
-            'trial_expired'
-          else
-            'changed_subscription'
-          end
-          s.update_attribute(unsubscribed_because: reason)
-        end
-      end
-      
-      def down
-        remove_column :billingly_subscriptions, :notified_trial_will_expire_on
-        remove_column :billingly_subscriptions, :notified_trial_expired_on
-        remove_column :billingly_subscriptions, :unsubscribed_because
-      end
-    end
-  END
 end
