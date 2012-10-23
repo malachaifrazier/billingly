@@ -289,5 +289,15 @@ module Billingly
       return false if debtor?
       return true
     end
+    
+    # Some customers do not want to be bothered via email, which is understandable.
+    # You can override this method to decide which customers should never be emailed
+    # with invoices, receipts or when their trial is over.
+    #
+    # It is false by default, this means all of your customers will be emailed.
+    # @return [Boolean] whether this customer opted out from receiving emails.
+    def do_not_email?
+      false
+    end
   end
 end

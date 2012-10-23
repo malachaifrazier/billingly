@@ -10,6 +10,7 @@ FactoryGirl.define do
       description 'Free trial for monthly subscription for 9.9'
       amount BigDecimal.new('9.9')
       payable_upfront false
+      association :plan, factory: :pro_50_monthly
 
       factory :expired_trial do
         is_trial_expiring_on Time.now
@@ -23,6 +24,7 @@ FactoryGirl.define do
     
     factory :monthly do
       periodicity 1.month
+      association :plan, factory: :pro_50_monthly
       description 'monthly subscription for 9.9'
       amount BigDecimal.new('9.9')
       payable_upfront false
@@ -74,6 +76,7 @@ FactoryGirl.define do
       description 'yearly subscription for 99.99'
       amount BigDecimal.new('99.99')
       payable_upfront true
+      association :plan, factory: :pro_50_yearly
       
       factory :first_year do
         subscribed_on Date.today

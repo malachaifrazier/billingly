@@ -25,9 +25,9 @@ Gem::Specification.new do |s|
   s.add_development_dependency "factory_girl_rails"
 
   s.post_install_message = <<-END
-    Add the following migration:
+    If migrating from before 0.1.1 (unlikely), add the following migration:
     
-    class CreateBillinglyTables < ActiveRecord::Migration
+    class UpdateSubscriptionFields < ActiveRecord::Migration
       def up
         add_column :billingly_subscriptions, :notified_trial_will_expire_on, :datetime
         add_column :billingly_subscriptions, :notified_trial_expired_on, :datetime

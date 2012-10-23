@@ -183,5 +183,13 @@ describe Billingly::Subscription do
         trial.notify_trial_expired.should be_nil
       end.not_to change{ ActionMailer::Base.deliveries.size }
     end
+
+    it 'does not notify if customer opted out of emails' do
+      Billingly::Customer.any_instance.stub(do_not_email?: true)
+      trial = create(:expired_trial)
+      expect do
+        trial.notify_trial_expired.should be_nil
+      end.not_to change{ ActionMailer::Base.deliveries.size }
+    end
   end
 end

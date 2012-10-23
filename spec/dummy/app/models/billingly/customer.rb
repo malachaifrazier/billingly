@@ -2,7 +2,7 @@
 class Billingly::Customer < Billingly::BaseCustomer
   
   def can_subscribe_to?(plan) 
-    return false if plan.awesomeness_level == current_awesomeness_level
+    return false if plan.awesomeness_level == current_awesomeness_level && !doing_trial?
     super
   end
   

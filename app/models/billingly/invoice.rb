@@ -59,6 +59,7 @@ module Billingly
       return unless notified_pending_on.nil?
       return if paid?
       return if deleted?
+      return if customer.do_not_email?
       return if due_on > subscription.grace_period.from_now
       Billingly::Mailer.pending_notification(self).deliver!
       update_attribute(:notified_pending_on, Time.now)
@@ -69,6 +70,7 @@ module Billingly
       return if paid?
       return if deleted?
       return if due_on > Time.now
+      return if customer.do_not_email?
       Billingly::Mailer.overdue_notification(self).deliver!
       update_attribute(:notified_overdue_on, Time.now)
     end
@@ -77,6 +79,7 @@ module Billingly
       return unless paid?
       return unless notified_paid_on.nil?
       return if deleted?
+      return if customer.do_not_email?
       Billingly::Mailer.paid_notification(self).deliver!
       update_attribute(:notified_paid_on, Time.now)
     end

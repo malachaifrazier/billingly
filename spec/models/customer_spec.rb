@@ -286,8 +286,7 @@ describe Billingly::Customer do
   describe 'when checking if the customer can upgrade to a certain plan' do
     [:pro_50_monthly, :pro_50_yearly, :pro_100_monthly, :pro_100_yearly].each do |plan|
       it "always lets customers on trial period subscribe, using #{plan}" do
-        customer = create(:customer)
-        customer.stub(doing_trial?: true)
+        customer = create(:trial).customer
         customer.can_subscribe_to?(create(plan)).should be_true
       end
     end
@@ -358,5 +357,9 @@ describe Billingly::Customer do
       latest.reload
       latest.should_not be_paid
     end
+  end
+  
+  it 'can set a do-not-email flag' do
+    create(:customer).should_not be_do_not_email
   end
 end

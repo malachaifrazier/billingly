@@ -155,6 +155,7 @@ module Billingly
       return unless trial?
       return unless terminated? && unsubscribed_because == 'trial_expired'
       return unless notified_trial_expired_on.nil?
+      return if customer.do_not_email?
       Billingly::Mailer.trial_expired_notification(self).deliver!
       update_attribute(:notified_trial_expired_on, Time.now)
       return self

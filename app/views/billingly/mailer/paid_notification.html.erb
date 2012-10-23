@@ -2,7 +2,8 @@
 
 <%=t 'billingly.receipt_text' %>
 
-<%= '-' * 70 %>
+<hr/>
+
 <%=t 'billingly.invoice_number' %>: <%= '%.10i' % @invoice.id %>
 <%=t 'billingly.paid_on' %>: <%= @invoice.paid_on.to_date %>
 <%=t 'billingly.plan' %>: <%= @invoice.subscription.description %>

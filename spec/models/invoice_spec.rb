@@ -171,6 +171,12 @@ describe Billingly::Invoice do
       should_not_email(:pending_notification)
       invoice.notify_pending
     end
+    
+    it 'does not notify if the customer opted out of emails' do
+      Billingly::Customer.any_instance.stub(do_not_email?: true)
+      should_not_email(:pending_notification)
+      invoice.notify_pending
+    end
   end
 
   describe 'when notifying overdue invoices' do
@@ -197,6 +203,7 @@ describe Billingly::Invoice do
     
     it 'does not notify if invoice was paid' do
       invoice
+      Timecop.travel 15.days.from_now
       invoice.customer.credit_payment(100.0)
       invoice.reload
       should_not_email(:overdue_notification)
@@ -204,7 +211,17 @@ describe Billingly::Invoice do
     end
     
     it 'does not notify if the invoice was deleted' do 
+      invoice
+      Timecop.travel 15.days.from_now
       invoice.update_attribute(:deleted_on, Time.now)
+      should_not_email(:overdue_notification)
+      invoice.notify_overdue
+    end
+
+    it 'does not notify if the customer opted out of emails' do
+      invoice
+      Timecop.travel 15.days.from_now
+      Billingly::Customer.any_instance.stub(do_not_email?: true)
       should_not_email(:overdue_notification)
       invoice.notify_overdue
     end
@@ -212,9 +229,7 @@ describe Billingly::Invoice do
 
   describe 'when notifying paid invoices' do
     it 'notifies about the paid invoice sending the receipt too' do
-      invoice
-      invoice.customer.credit_payment(100.0)
-      invoice.reload
+      Billingly::Invoice.any_instance.stub(paid_on: 1.day.ago)
       should_email(:paid_notification)
       invoice.notify_paid
     end
@@ -226,14 +241,22 @@ describe Billingly::Invoice do
     end
 
     it 'does not notify same invoice twice' do
-      invoice
+      Billingly::Invoice.any_instance.stub(paid_on: 1.day.ago)
       invoice.notify_paid
       should_not_email(:paid_notification)
       invoice.notify_paid
     end
 
     it 'does not notify if the invoice was deleted' do 
+      Billingly::Invoice.any_instance.stub(paid_on: 1.day.ago)
       invoice.update_attribute(:deleted_on, Time.now)
+      should_not_email(:paid_notification)
+      invoice.notify_paid
+    end
+
+    it 'does not notify if the customer opted out of emails' do
+      Billingly::Customer.any_instance.stub(do_not_email?: true)
+      Billingly::Invoice.any_instance.stub(paid_on: 1.day.ago)
       should_not_email(:paid_notification)
       invoice.notify_paid
     end

@@ -13,5 +13,5 @@
 
 <%= '%-55s%15s' % [t('billingly.you_should_pay'), "$#{@invoice.amount - @cash} USD"] %>
 
-<%=t 'billingly.you_can_pay_this_invoice_by_visiting' %> http://payments_page
+<%=t 'billingly.you_can_pay_this_invoice_by_visiting' %> <%= link_to(subscriptions_url, subscriptions_url) %>
 
