@@ -130,6 +130,17 @@ module Billingly
         on_subscription_success
       end
     end
+    
+    # Customers can subscribe to a plan using a special subscription code which would
+    # allow them to access an otherwise hidden plan.
+    # @param code [String] The 13 digit EAN-13 code being redeemed
+    def redeem_special_plan_code(code_string)
+      code = Billingly::SpecialPlanCode.find_by_code(code_string)
+      return if code.nil?
+      return if code.redeemed?
+      subscribe_to_plan(code.plan)
+      code.update_attributes(customer: self, redeemed_on: Time.now)
+    end
 
     # Callback called whenever this customer is successfully subscribed to a plan.
     # This callback does not differentiate if the customer is subscribing for the first time,

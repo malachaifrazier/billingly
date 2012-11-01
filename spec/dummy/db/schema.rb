@@ -65,6 +65,15 @@ ActiveRecord::Schema.define(:version => 20120928205624) do
     t.integer  "awesomeness_level",                                :default => 0,   :null => false
   end
 
+  create_table "billingly_special_plan_codes", :force => true do |t|
+    t.integer  "plan_id",     :null => false
+    t.string   "code"
+    t.integer  "customer_id"
+    t.datetime "redeemed_on"
+    t.datetime "created_at",  :null => false
+    t.datetime "updated_at",  :null => false
+  end
+
   create_table "billingly_subscriptions", :force => true do |t|
     t.integer  "customer_id",                                                                     :null => false
     t.string   "description",                                                                     :null => false

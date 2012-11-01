@@ -67,6 +67,15 @@ class CreateBillinglyTables < ActiveRecord::Migration
       # Custom field on plans to store awesomeness level
       t.integer 'awesomeness_level', null: false, default: 0
     end
+
+    create_table :billingly_special_plan_codes do |t|
+      t.references :plan, null: false
+      t.string :code
+      t.references :customer
+      t.datetime :redeemed_on
+      t.timestamps
+    end
+    add_index :billingly_special_plan_codes, :code, :unique => true
   end
 end
 

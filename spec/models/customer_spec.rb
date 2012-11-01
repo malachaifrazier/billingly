@@ -362,4 +362,29 @@ describe Billingly::Customer do
   it 'can set a do-not-email flag' do
     create(:customer).should_not be_do_not_email
   end
+  
+  describe 'when redeeming special plan codes' do
+    let(:code){ Billingly::SpecialPlanCode.generate_for_plan(plan,1).first }
+
+    it 'subscribes to the special plan setting the code as redeemed' do
+      customer = create(:customer)
+      expect do
+        customer.redeem_special_plan_code(code.code)
+      end.to change{ customer.active_subscription }
+      code.reload
+      code.should be_redeemed
+      code.customer.should == customer
+    end
+    
+    it 'does not subscribe if the code did not exist' do
+      customer = create(:customer)
+      customer.redeem_special_plan_code("blabalbbla").should be_nil
+    end
+    
+    it 'does not subscribe if the code was already redeemed' do
+      customer = create(:customer)
+      customer.redeem_special_plan_code(code.code).should_not be_nil
+      customer.redeem_special_plan_code(code.code).should be_nil
+    end
+  end
 end
