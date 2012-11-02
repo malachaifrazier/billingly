@@ -95,6 +95,16 @@ module Billingly
       not is_trial_expiring_on.nil?
     end
 
+    # Some subscriptions have a setup fee, or an initial discount.
+    # For billingly, this is considered a signup_price. If set, then the first invoice
+    # to be generated for this subscription will be for the amount specified in signup_price
+    # instead of {#amount}
+    #
+    # A signup_price can also be specified on a {Billingly::Plan Plan} and will be copied
+    # over to the subscription when subscribing to it.
+    # @property signup_price
+    # @return [BigDecimal]
+
     # Invoices will be generated before their due_date, as soon as possible,
     # but not sooner than GENERATE_AHEAD days.
     GENERATE_AHEAD = 3.days
@@ -108,6 +118,8 @@ module Billingly
     # The invoice generation process should run frequently, at least on a daily basis.
     # It will create invoices some time before they are due, to give customers a chance
     # to pay and settle them.
+    # If there is any {#signup_price} then the first invoice will be for that amount
+    # instead of the regular amount.
     # This method is idempotent, if an upcoming invoice for a subscription already exists,
     # it does not create yet another one.
     def generate_next_invoice
@@ -118,7 +130,9 @@ module Billingly
       due_on = (payable_upfront ? from : to) + grace_period
       return if GENERATE_AHEAD.from_now < from
 
-      invoice = invoices.create!(customer: customer, amount: amount,
+      payable_amount = (invoices.empty? && signup_price) ? signup_price : amount
+      
+      invoice = invoices.create!(customer: customer, amount: payable_amount,
         due_on: due_on, period_start: from, period_end: to)
       invoice.charge
       return invoice

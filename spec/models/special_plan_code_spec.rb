@@ -18,10 +18,16 @@ describe Billingly::SpecialPlanCode do
   
   describe 'when populating codes in the database' do
     it 'creates codes for the given plan' do
+      plan = create(:pro_50_monthly)
       expect do
-        Billingly::SpecialPlanCode.generate_for_plan(create(:pro_50_monthly), 10)
-          .size.should == 10
-      end.to change{ Billingly::SpecialPlanCode.count }.by(10)
+        Billingly::SpecialPlanCode.generate_for_plan(plan, 10).size.should == 10
+      end.to change{ Billingly::SpecialPlanCode.where(plan_id: plan.id).count }.by(10)
+    end
+    it 'creates codes with a particular amount' do
+      plan = create(:pro_50_monthly)
+      expect do
+        Billingly::SpecialPlanCode.generate_for_plan(plan, 10, 4).size.should == 10
+      end.to change{ Billingly::SpecialPlanCode.where(bonus_amount: 4).count }.by(10)
     end
   end
   

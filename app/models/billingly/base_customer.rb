@@ -119,7 +119,7 @@ module Billingly
 
       subscriptions.build.tap do |new|
         [:payable_upfront, :description, :periodicity,
-         :amount, :grace_period].each do |k|
+         :amount, :grace_period, :signup_price].each do |k|
           new[k] = plan[k]
         end
         new.plan = plan if plan.is_a?(Billingly::Plan)
@@ -138,6 +138,7 @@ module Billingly
       code = Billingly::SpecialPlanCode.find_by_code(code_string)
       return if code.nil?
       return if code.redeemed?
+      credit_payment(code.bonus_amount) if code.bonus_amount
       subscribe_to_plan(code.plan)
       code.update_attributes(customer: self, redeemed_on: Time.now)
     end

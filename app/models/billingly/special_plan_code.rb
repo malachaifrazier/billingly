@@ -11,7 +11,7 @@ class Billingly::SpecialPlanCode < ActiveRecord::Base
   validates :plan, presence: true
   validates :code, presence: true
   
-  attr_accessible :plan, :code, :customer, :redeemed_on
+  attr_accessible :plan, :code, :customer, :redeemed_on, :bonus_amount
   
   # !@attribute [r] redeemed?
   # @return [Boolean] Whether this code has been redeemed or not
@@ -36,9 +36,9 @@ class Billingly::SpecialPlanCode < ActiveRecord::Base
   # with pre-existing codes.
   # @param plan [Plan] The plan to generate the codes for.
   # @param how_many [Integer] How many new codes to issue.
-  def self.generate_for_plan(plan, how_many)
+  def self.generate_for_plan(plan, how_many, bonus_amount = nil)
     generate_ean_13_codes(how_many).collect do |code|
-      self.create!(code: code, plan: plan)
+      self.create!(code: code, plan: plan, bonus_amount: bonus_amount)
     end
   end
   

@@ -2,7 +2,7 @@ FactoryGirl.define do
 
 factory :plan, class: Billingly::Plan do 
   grace_period 10.days
-
+  
   factory :pro_50_monthly do 
     name 'Pro 50'
     description '50GB for 9,99 a month.'
@@ -10,7 +10,7 @@ factory :plan, class: Billingly::Plan do
     amount BigDecimal.new('9.9')
     payable_upfront false
   end
-    
+
   factory :pro_50_yearly do
     name 'Pro 50'
     description '50GB for 99,99 yearly.'

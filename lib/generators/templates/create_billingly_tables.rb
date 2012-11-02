@@ -51,6 +51,7 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.datetime 'notified_trial_will_expire_on'
       t.datetime 'notified_trial_expired_on'
       t.references :plan
+      t.decimal :signup_price, precision: 11, scale: 2
       t.timestamps
     end
     
@@ -61,12 +62,14 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.decimal 'amount', precision: 11, scale: 2, default: 0.0, null: false # 9.99
       t.boolean 'payable_upfront', null: false
       t.string 'grace_period', null: false
+      t.integer 'signup_price'
       t.boolean 'hidden_on'
       t.timestamps
     end
     
     create_table :billingly_special_plan_codes do |t|
       t.references :plan, null: false
+      t.decimal :bonus_amount, precision: 11, scale: 2
       t.string :code
       t.references :customer
       t.datetime :redeemed_on

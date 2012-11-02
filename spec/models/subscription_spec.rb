@@ -16,6 +16,21 @@ describe Billingly::Subscription do
       end
     end
     
+    describe 'when dealing a different initial price' do
+      subject do
+        @plan = create(:pro_50_monthly, signup_price: 10)
+        create(:customer).subscribe_to_plan(@plan)
+      end
+
+      it 'uses the given price for the first invoice' do
+        subject.invoices.first.amount.to_i.should == 10
+      end
+      
+      it 'stores the initial price in the subscription' do
+        subject.signup_price.to_i.should == 10
+      end
+    end
+    
     it 'does not generate invoices too far in advance' do
       subscription = create(:first_month)
       expect do

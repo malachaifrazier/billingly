@@ -386,5 +386,11 @@ describe Billingly::Customer do
       customer.redeem_special_plan_code(code.code).should_not be_nil
       customer.redeem_special_plan_code(code.code).should be_nil
     end
+    
+    it 'credits a payment if the code also had a bonus_amount' do
+      code.update_attribute(:bonus_amount, 2)
+      customer.redeem_special_plan_code(code.code)
+      customer.reload.ledger[:cash].to_i.should == 2
+    end
   end
 end

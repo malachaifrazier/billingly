@@ -51,6 +51,7 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.boolean 'notified_trial_will_expire_on'
       t.boolean 'notified_trial_expired_on'
       t.references :plan
+      t.decimal :signup_price, precision: 11, scale: 2
       t.timestamps
     end
     
@@ -62,6 +63,7 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.boolean 'payable_upfront', null: false
       t.string 'grace_period', null: false
       t.boolean 'hidden_on'
+      t.decimal :signup_price, precision: 11, scale: 2
       t.timestamps
       
       # Custom field on plans to store awesomeness level
@@ -70,6 +72,7 @@ class CreateBillinglyTables < ActiveRecord::Migration
 
     create_table :billingly_special_plan_codes do |t|
       t.references :plan, null: false
+      t.decimal :bonus_amount, precision: 11, scale: 2
       t.string :code
       t.references :customer
       t.datetime :redeemed_on

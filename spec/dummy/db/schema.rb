@@ -60,19 +60,23 @@ ActiveRecord::Schema.define(:version => 20120928205624) do
     t.boolean  "payable_upfront",                                                   :null => false
     t.string   "grace_period",                                                      :null => false
     t.boolean  "hidden_on"
+    t.decimal  "signup_price",      :precision => 11, :scale => 2
     t.datetime "created_at",                                                        :null => false
     t.datetime "updated_at",                                                        :null => false
     t.integer  "awesomeness_level",                                :default => 0,   :null => false
   end
 
   create_table "billingly_special_plan_codes", :force => true do |t|
-    t.integer  "plan_id",     :null => false
+    t.integer  "plan_id",                                     :null => false
+    t.decimal  "bonus_amount", :precision => 11, :scale => 2
     t.string   "code"
     t.integer  "customer_id"
     t.datetime "redeemed_on"
-    t.datetime "created_at",  :null => false
-    t.datetime "updated_at",  :null => false
+    t.datetime "created_at",                                  :null => false
+    t.datetime "updated_at",                                  :null => false
   end
+
+  add_index "billingly_special_plan_codes", ["code"], :name => "index_billingly_special_plan_codes_on_code", :unique => true
 
   create_table "billingly_subscriptions", :force => true do |t|
     t.integer  "customer_id",                                                                     :null => false
@@ -88,6 +92,7 @@ ActiveRecord::Schema.define(:version => 20120928205624) do
     t.boolean  "notified_trial_will_expire_on"
     t.boolean  "notified_trial_expired_on"
     t.integer  "plan_id"
+    t.decimal  "signup_price",                  :precision => 11, :scale => 2
     t.datetime "created_at",                                                                      :null => false
     t.datetime "updated_at",                                                                      :null => false
   end
