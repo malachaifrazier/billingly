@@ -59,17 +59,27 @@
             %p  
               Billingly is an open source rails 3 engine that manages
               paid subscriptions to your web application. 
+            %p 
+              With several extension points, you can consider billing.ly to be a framework
+              for building your SaaS application billing semantics.
+              
               
             %p
               It's similar to the
               %a(href="http://railskits.com/saas/") SaaS Rails Kit
               but on earlier stages. If you need premium support and can afford it,
               and don't care about using propietary software, you should use their product.
-              
+            
             %p
-              If you just want a service to manage your subscriptions for you, then
+              If you just want a service to manage your subscriptions and payments for you, then
               you may want to check out 
               %a(href="http://chargify.com") Chargify.com
+              or
+              %a(href="https://stripe.com/") Stripe.com.
+
+            %p  
+              You would still need to integrate your app with them and implement some of your own semantics regarding what customers are entitled to do on your site.
+              
 
           .span3
             .well
@@ -93,10 +103,9 @@
                     Subscriptions can have an arbitrary length:
                     A year, a month, 90 days ...
                   %li
-                    You can request payments upfront or after the subscription
-                    period is over.
+                    You can request payments upfront or after the billable period is over.
 
-              %li Offer standarized subscription plans for self-service sign ups.
+              %li Offer standarized subscription Plans for self-service sign ups.
 
               %li Offer special deals on a per-customer basis.
 
@@ -111,6 +120,12 @@
                 Prorating and reimbursing in case there were any upfront payments.
 
               %li Offer a trial period before you require people to become paying customers.
+              
+              %li Charge for setup fees on the first invoice.
+              
+              %li Give a signup-discount for a customer's first invoice.
+              
+              %li Offer redeemable code that when redeemed enable customers to signup for special pricing and/or credit bonus money in their account.
 
         .row
           .span8
