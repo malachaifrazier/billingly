@@ -50,7 +50,7 @@ module Billingly
           end
         end
 
-        helper_method :current_customer
+        helper_method :current_customer, :current_promo_code, :current_promo_code_plan
       end
     end
   end
