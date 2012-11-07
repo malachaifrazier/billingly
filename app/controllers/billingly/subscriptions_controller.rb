@@ -8,7 +8,7 @@ class Billingly::SubscriptionsController < ::ApplicationController
   # It's likely the only reachable page for deactivated customers.
   def index
     @subscription = current_customer.active_subscription
-    @plans = Billingly::Plan.all
+    @plans = Billingly::Plan.where('hidden = false')
     @invoices = current_customer.invoices.order('created_at DESC')
   end
   

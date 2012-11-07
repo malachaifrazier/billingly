@@ -63,7 +63,7 @@ class CreateBillinglyTables < ActiveRecord::Migration
       t.boolean 'payable_upfront', null: false
       t.string 'grace_period', null: false
       t.integer 'signup_price'
-      t.boolean 'hidden_on'
+      t.boolean 'hidden', default: false, null: false
       t.timestamps
     end
     

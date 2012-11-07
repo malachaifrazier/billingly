@@ -364,33 +364,26 @@ describe Billingly::Customer do
   end
   
   describe 'when redeeming special plan codes' do
-    let(:code){ Billingly::SpecialPlanCode.generate_for_plan(plan,1).first }
-
     it 'subscribes to the special plan setting the code as redeemed' do
+      code = create(:promo_code)
       customer = create(:customer)
       expect do
-        customer.redeem_special_plan_code(code.code)
+        customer.redeem_special_plan_code(code)
       end.to change{ customer.active_subscription }
       code.reload
       code.should be_redeemed
       code.customer.should == customer
     end
-    
-    it 'does not subscribe if the code did not exist' do
-      customer = create(:customer)
-      customer.redeem_special_plan_code("blabalbbla").should be_nil
-    end
-    
-    it 'does not subscribe if the code was already redeemed' do
-      customer = create(:customer)
-      customer.redeem_special_plan_code(code.code).should_not be_nil
-      customer.redeem_special_plan_code(code.code).should be_nil
-    end
-    
+
     it 'credits a payment if the code also had a bonus_amount' do
-      code.update_attribute(:bonus_amount, 2)
-      customer.redeem_special_plan_code(code.code)
+      code = create(:promo_code, bonus_amount: 2)
+      customer.redeem_special_plan_code(code)
       customer.reload.ledger[:cash].to_i.should == 2
+    end
+    
+    it 'does not subscribe if code was redeemed (defensively)' do
+      code = create(:promo_code, redeemed_on: Time.now)
+      customer.redeem_special_plan_code(code).should be_nil
     end
   end
 end

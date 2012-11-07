@@ -33,6 +33,21 @@ module Billingly
               redirect_to(subscriptions_path)
             end
           end
+          
+          # When an anonymous user redeems a {SpecialPlanCode} the code is stored
+          # in the session. You should first sign them up and then subscribe them
+          # using the code they previously redeemed.
+          # @return [SpecialPlanCode] The instance for the code they redeemed.
+          def current_promo_code
+            @current_promo_code ||=
+              Billingly::SpecialPlanCode.find_redeemable(session[:current_promo_code])
+          end
+          
+          # Shortcut for getting the plan for the current promo code, if any.
+          # @return [Billingly::Plan] The plan referred to by the current code.
+          def current_promo_code_plan
+            @current_promo_code.plan if @current_promo_code
+          end
         end
 
         helper_method :current_customer

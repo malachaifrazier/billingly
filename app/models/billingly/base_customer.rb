@@ -133,10 +133,9 @@ module Billingly
     
     # Customers can subscribe to a plan using a special subscription code which would
     # allow them to access an otherwise hidden plan.
-    # @param code [String] The 13 digit EAN-13 code being redeemed
-    def redeem_special_plan_code(code_string)
-      code = Billingly::SpecialPlanCode.find_by_code(code_string)
-      return if code.nil?
+    # The {SpecialPlanCode} can also contain an amount to be redeemed.
+    # @param code [SpecialPlanCode] The code being redeemed.
+    def redeem_special_plan_code(code)
       return if code.redeemed?
       credit_payment(code.bonus_amount) if code.bonus_amount
       subscribe_to_plan(code.plan)

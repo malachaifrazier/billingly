@@ -1,5 +1,9 @@
 en:
   billingly:
+    promo_codes:
+      redeemed_successfully: Your promo code has been redeemed!
+      invalid: The promo code you entered was invalid
+      cannot_subscribe_to_plan: You can't subscribe to the plan provided by your promo code
     your_account_was_suspended: Your account was suspended
     your_invoice_is_available: Your invoice is available
     payment_receipt: Payment Receipt

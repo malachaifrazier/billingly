@@ -3,6 +3,8 @@ ENV["RAILS_ENV"] ||= 'test'
 require_relative 'dummy/config/environment'
 require 'rspec/autorun'
 require 'rspec/rails'
+require 'capybara/rspec'
+require 'capybara/rails'
 require 'factory_girl_rails'
 require 'timecop'
 

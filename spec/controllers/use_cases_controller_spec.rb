@@ -1,7 +1,10 @@
 require 'spec_helper'
 
 describe UseCasesController do
-  before { create(:pro_50_monthly, payable_upfront: true) }
+  before {
+    create(:pro_50_monthly, payable_upfront: true)
+    create(:pro_50_monthly, payable_upfront: true, hidden: true)
+  }
   let(:customer){ controller.current_customer }
   
   it 'credits 5 dollars into the customer account' do
@@ -72,5 +75,11 @@ describe UseCasesController do
       post action
       controller.current_customer.should_not == old_customer
     end
+  end
+  
+  it 'creates a promo code for redemption' do
+    post :create_promo_code
+    code = Billingly::SpecialPlanCode.last
+    response.should redirect_to new_redemption_path(promo_code: code.code)
   end
 end

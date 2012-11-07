@@ -23,10 +23,19 @@
                 %i.icon-shopping-cart
                 Subscription
 
-          .pull-right
-            = link_to "Credit $5", use_cases_path(:credit_payment),
-                method: :post, class: 'btn btn-inverse'
-          .nav.pull-right
+          .nav
+            .btn-group
+              %a.btn.btn-inverse.dropdown-toggle(href="#" data-toggle="dropdown")
+                Actions
+                %span.caret
+              %ul.dropdown-menu
+                %li
+                  = link_to "Credit $5 to your account", use_cases_path(:credit_payment),
+                      method: :post
+                %li
+                  = link_to "Create and redeem a promo code",
+                      use_cases_path(:create_promo_code), method: :post
+          .nav
             .btn-group
               %a.btn.btn-inverse.dropdown-toggle(href="#" data-toggle="dropdown")
                 Select Scenario
@@ -142,6 +151,8 @@
 
       %hr
       %footer
-        <p>&copy; Company 2012</p>
+        %p  
+          MIT License. Copyright 2012 Nubis
+          %a(href="mailto:y%6f@%6eubi%73%2eim") &#121;o@n&#117;b&#105;s.im
 
     = javascript_include_tag "application"

@@ -13,6 +13,7 @@ describe Billingly::SpecialPlanCode do
     end
     
     it 'does not create repeated codes if an existing list is provided' do
+      pending
     end
   end
   
@@ -39,6 +40,21 @@ describe Billingly::SpecialPlanCode do
       Dir[File.expand_path('~/ean_13_codes_for_*.csv')].size.should == 2
       Billingly::SpecialPlanCode.cleanup_exported_files
       Dir[File.expand_path('~/ean_13_codes_for_*.csv')].size.should == 0
+    end
+  end
+  
+  describe 'when retrieving only a redeemable code' do
+    it 'retrieves a redeemable code' do
+      Billingly::SpecialPlanCode.find_redeemable(create(:promo_code).code).should_not be_nil
+    end
+    
+    it 'does not retrieve non existing codes' do
+      Billingly::SpecialPlanCode.find_redeemable('abcd1').should be_nil
+    end
+    
+    it 'does not retrieve codes which have been redeemed' do
+      code = create(:promo_code, redeemed_on: Time.now).code
+      Billingly::SpecialPlanCode.find_redeemable(code).should be_nil
     end
   end
 end

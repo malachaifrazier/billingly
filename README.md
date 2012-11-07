@@ -34,5 +34,5 @@ Billingly does not receive payments directly (from Paypal, or Worldpay for examp
   * Explore the [Docs](http://rubydoc.info/github/nubis/billingly/master/frames/file/README.md).
 
 # License
-  MIT License. Copyright 2012 Nubis (nubis@woobiz.com.ar)
+  MIT License. Copyright 2012 Nubis (&#121;o@n&#117;b&#105;s.im)
 

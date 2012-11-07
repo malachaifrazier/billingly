@@ -65,8 +65,15 @@ class UseCasesController < ApplicationController
       notice: "You have been subscribed to #{plan.name} for 45 days, you missed your last payment"
   end 
 
-  # Selects a plan appropriate for running all this scenarios.
+  # Selects a plan appropriate for running all the above scenarios.
   def plan
     Billingly::Plan.where("periodicity = '1.month'").first
+  end
+  
+  # Creates a promo code so you can test how code redemption works.
+  def create_promo_code
+    plan = Billingly::Plan.where("hidden = true").first
+    code = Billingly::SpecialPlanCode.generate_for_plan(plan, 1, 100).first
+    redirect_to new_redemption_path(promo_code: code.code)
   end
 end

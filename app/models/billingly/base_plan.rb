@@ -5,7 +5,7 @@ module Billingly
     self.table_name = 'billingly_plans'
 
     attr_accessible :name, :plan_code, :description, :periodicity,
-      :amount, :payable_upfront, :grace_period
+      :amount, :payable_upfront, :grace_period, :hidden
     
     has_duration :grace_period
     validates :grace_period, presence: true

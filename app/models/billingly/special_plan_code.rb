@@ -57,4 +57,12 @@ class Billingly::SpecialPlanCode < ActiveRecord::Base
   def self.cleanup_exported_files
     `rm #{File.expand_path('~/ean_13_codes_for_*.csv')}`
   end
+  
+  # Shorthand finder for a redeemable code.
+  # This means that the code exists and has not been redeemed yet.
+  # @param code [String] The code to lookup.
+  # @return [SpecialPlanCode, nil] the SpecialPlanCode instance, or nothing.
+  def self.find_redeemable(code)
+    self.find_by_code_and_redeemed_on(code, nil)
+  end
 end

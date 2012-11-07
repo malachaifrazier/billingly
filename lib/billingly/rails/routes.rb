@@ -8,6 +8,8 @@ class ActionDispatch::Routing::Mapper
           post :deactivate
         end
       end
+      resources :redemptions, controller: 'billingly/redemptions', only: [:new, :create]
+      get 'redeem' => "billingly/redemptions#new"
     end
     if skope then scope(skope, as: skope, &route) else route.call end
   end

@@ -56,14 +56,14 @@ ActiveRecord::Schema.define(:version => 20120928205624) do
     t.string   "name"
     t.string   "description"
     t.string   "periodicity"
-    t.decimal  "amount",            :precision => 11, :scale => 2, :default => 0.0, :null => false
-    t.boolean  "payable_upfront",                                                   :null => false
-    t.string   "grace_period",                                                      :null => false
-    t.boolean  "hidden_on"
+    t.decimal  "amount",            :precision => 11, :scale => 2, :default => 0.0,   :null => false
+    t.boolean  "payable_upfront",                                                     :null => false
+    t.string   "grace_period",                                                        :null => false
+    t.boolean  "hidden",                                           :default => false, :null => false
     t.decimal  "signup_price",      :precision => 11, :scale => 2
-    t.datetime "created_at",                                                        :null => false
-    t.datetime "updated_at",                                                        :null => false
-    t.integer  "awesomeness_level",                                :default => 0,   :null => false
+    t.datetime "created_at",                                                          :null => false
+    t.datetime "updated_at",                                                          :null => false
+    t.integer  "awesomeness_level",                                :default => 0,     :null => false
   end
 
   create_table "billingly_special_plan_codes", :force => true do |t|

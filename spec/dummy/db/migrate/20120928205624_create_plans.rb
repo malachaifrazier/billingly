@@ -36,6 +36,16 @@ class CreatePlans < ActiveRecord::Migration
       grace_period: 5.days,
       awesomeness_level: 100
     )
+    Billingly::Plan.create!(
+      name: 'A Secret Saint',
+      description: 'Same as the Saint plan, but cheaper. Only accessible via promo code',
+      periodicity: 1.year,
+      amount: 50.0,
+      payable_upfront: true,
+      grace_period: 5.days,
+      awesomeness_level: 200,
+      hidden: true
+    )
   end
 
   def down
