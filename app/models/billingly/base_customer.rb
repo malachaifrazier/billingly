@@ -117,10 +117,7 @@ module Billingly
     def subscribe_to_plan(plan, is_trial_expiring_on = nil) 
       subscriptions.last.terminate_changed_subscription if subscriptions.last
 
-      self.deactivated_since = nil
-      self.deactivation_reason = nil
-      self.save!
-      subscriptions.build.tap do |new|
+      subscription = subscriptions.build.tap do |new|
         [:payable_upfront, :description, :periodicity,
          :amount, :grace_period, :signup_price].each do |k|
           new[k] = plan[k]
@@ -132,6 +129,10 @@ module Billingly
         new.generate_next_invoice  
         on_subscription_success
       end
+      self.deactivated_since = nil
+      self.deactivation_reason = nil
+      self.save!
+      return subscription
     end
     
     # Customers can subscribe to a plan using a special subscription code which would
