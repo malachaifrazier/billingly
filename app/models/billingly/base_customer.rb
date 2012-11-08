@@ -117,6 +117,9 @@ module Billingly
     def subscribe_to_plan(plan, is_trial_expiring_on = nil) 
       subscriptions.last.terminate_changed_subscription if subscriptions.last
 
+      self.deactivated_since = nil
+      self.deactivation_reason = nil
+      self.save!
       subscriptions.build.tap do |new|
         [:payable_upfront, :description, :periodicity,
          :amount, :grace_period, :signup_price].each do |k|
