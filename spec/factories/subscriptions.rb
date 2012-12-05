@@ -13,6 +13,7 @@ FactoryGirl.define do
       association :plan, factory: :pro_50_monthly
 
       factory :expired_trial do
+        association :customer, factory: :trial_expired_customer
         is_trial_expiring_on Time.now
         unsubscribed_on Time.now
         unsubscribed_because 'trial_expired'

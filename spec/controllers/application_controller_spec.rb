@@ -2,6 +2,13 @@ require 'spec_helper'
 
 describe ApplicationController do
   let(:customer){ create :customer }
+
+  let :trial_expired_customer do
+    customer = create(:expired_trial).customer
+    controller.stub current_customer: customer
+    customer
+  end
+
   
   describe 'when creating a customer for the demo app' do
     it 'creates a customer the first time' do
@@ -44,9 +51,15 @@ describe ApplicationController do
       controller.should_receive(:redirect_to).with(subscriptions_path)
       controller.requires_active_customer
     end
-    
+
     it 'grants passage to active customers' do
       controller.stub current_customer: create(:customer)
+      controller.should_not_receive(:redirect_to)
+      controller.requires_active_customer.should be_nil
+    end
+
+    it 'grants passage to trial expired customers' do
+      customer = trial_expired_customer
       controller.should_not_receive(:redirect_to)
       controller.requires_active_customer.should be_nil
     end
