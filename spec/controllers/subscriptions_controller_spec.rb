@@ -77,12 +77,6 @@ describe Billingly::SubscriptionsController do
       customer
     end
 
-    let :trial_expired_customer do
-      customer = create(:expired_trial).customer
-      controller.stub current_customer: customer
-      customer
-    end
-
     it 'reactivates a customer who left in their own terms' do
       deactivated.should_receive(:reactivate).and_return(deactivated)
       post :reactivate
@@ -107,16 +101,6 @@ describe Billingly::SubscriptionsController do
       deactivated.should_receive(:reactivate).with(plan).and_return(deactivated)
       post :reactivate, plan_id: plan.id.to_s
       response.should redirect_to(action: :index)
-    end
-
-    it 'allows a customer to subscribe to a plan after trial expired' do
-      customer = trial_expired_customer
-      plan = create :pro_50_monthly
-      expect do
-        post :create, plan_id: plan.id.to_s
-      end.to change{ Billingly::Subscription.count }
-      customer.should_not be_doing_trial
-      customer.active_subscription.plan.should == plan
     end
   end
   

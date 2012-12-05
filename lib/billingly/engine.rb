@@ -29,7 +29,7 @@ module Billingly
           # The billingly controllers already apply this before filter, you should
           # use it in your own controllers too.
           def requires_active_customer
-            if requires_customer.nil? && current_customer.deactivated? && current_customer.deactivation_reason != 'trial_expired'
+            if requires_customer.nil? && current_customer.deactivated?
               redirect_to(subscriptions_path)
             end
           end
