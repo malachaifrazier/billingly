@@ -35,6 +35,6 @@ gem "timecop"
 # your gem to rubygems.org.
 
 # To use debugger
-gem 'debugger'
+gem 'debugger' unless ENV['TRAVIS']
 
 gem 'thin'

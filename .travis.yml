@@ -1,6 +1,6 @@
 language: ruby
 rvm:
-  - "1.9.3-p194"
+  - "1.9.3"
 before_script:
   - psql -c 'create database billingly_test;' -U postgres
   - "bundle exec rake --rakefile=spec/dummy/Rakefile db:migrate db:test:prepare RAILS_ENV=test" 
