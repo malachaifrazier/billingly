@@ -5,9 +5,8 @@ source "http://rubygems.org"
 # development dependencies will be added by default to the :development group.
 # gemspec
 
-gem 'rails', "~> 3.2.0"
+gem 'rails', ">= 3.2.0"
 gem 'validates_email_format_of'
-gem 'has_duration', '0.0.3'
 gem 'pg'
 gem 'ean13'
 
@@ -33,8 +32,3 @@ gem "timecop"
 # your gemspec. These might include edge Rails or gems from your path or
 # Git. Remember to move these dependencies to your gemspec before releasing
 # your gem to rubygems.org.
-
-# To use debugger
-gem 'debugger' unless ENV['TRAVIS']
-
-gem 'thin'
