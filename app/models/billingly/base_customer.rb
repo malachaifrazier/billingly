@@ -26,11 +26,11 @@ module Billingly
     # The Date and Time in which the Customer's account was deactivated (see {#deactivated?}).
     # This field denormalizes the date in which this customer's last subscription was ended.
     # @!attribute [r] deactivated_since
-    # @return [DateTime] 
+    # @return [DateTime]
     validates :deactivated_since, presence: true, if: :deactivation_reason
 
     # (see Customer::DEACTIVATION_REASONS)
-    # @return [String] 
+    # @return [String]
     # @!attribute deactivation_reason
     validates :deactivation_reason, inclusion: DEACTIVATION_REASONS, if: :deactivated?
 
@@ -41,13 +41,13 @@ module Billingly
     def deactivated?
       not deactivated_since.nil?
     end
-  
-    # Used as contact address, validates format but does not check uniqueness.
-    # @!attribute email
-    # @return [String]
-    attr_accessible :email
-    validates_email_format_of :email
-    
+
+    def email
+      billable.respond_to?(:billable_email) ? billable.billable_email : billable.email
+    end
+
+    belongs_to :billable, polymorphic: true
+
     # All subscriptions this customer was ever subscribed to.
     # @!attribute subscriptions
     # @return [Array<Subscription>]
@@ -64,8 +64,8 @@ module Billingly
     def active_subscription
       last = subscriptions.last
       last unless last.nil? || last.terminated?
-    end 
-    
+    end
+
     # (see Customer.debtors)
     # @!attribute [r] debtor?
     # @return [Boolean] whether this customer is a debtor or not.
@@ -85,25 +85,25 @@ module Billingly
     has_many :journal_entries, foreign_key: 'customer_id'
 
     # (see Customer::DEACTIVATION_REASONS)
-    # @return [Symbol] 
+    # @return [Symbol]
     # @!attribute deactivation_reason
     validates :deactivation_reason, inclusion: DEACTIVATION_REASONS, if: :deactivated?
 
     # Whether the user is on an unfinished trial period.
     # @!attribute [r] doing_trial?
-    # @return [Boolean] 
+    # @return [Boolean]
     def doing_trial?
       active_subscription && active_subscription.trial?
     end
-    
+
     # When the user is doing a trial, this would be how many days are left until it's over.
     # @!attribute [r] trial_days_left
-    # @return [Integer] 
+    # @return [Integer]
     def trial_days_left
       return unless doing_trial?
       (active_subscription.is_trial_expiring_on.to_date - Time.now.utc.to_date).to_i
     end
-    
+
     # Customers subscribe to the service under certain conditions referred to as a {Plan},
     # and perform periodic payments to continue using it.
     # We offer common plans stating how much and how often they should pay, also, if the
@@ -112,9 +112,9 @@ module Billingly
     # deals as {Plan Plans} from which a proper {Subscription} is created.
     # A {Subscription} is also an acceptable argument, in that case the new one
     # will maintain all the characteristics of that one, except the starting date.
-    # @param [Plan, Subscription] 
+    # @param [Plan, Subscription]
     # @return [Subscription] The newly created {Subscription}
-    def subscribe_to_plan(plan, is_trial_expiring_on = nil) 
+    def subscribe_to_plan(plan, is_trial_expiring_on = nil)
       subscriptions.last.terminate_changed_subscription if subscriptions.last
 
       subscription = subscriptions.build.tap do |new|
@@ -126,7 +126,7 @@ module Billingly
         new.is_trial_expiring_on = is_trial_expiring_on
         new.subscribed_on = Time.now
         new.save!
-        new.generate_next_invoice  
+        new.generate_next_invoice
         on_subscription_success
       end
       self.deactivated_since = nil
@@ -134,7 +134,7 @@ module Billingly
       self.save!
       return subscription
     end
-    
+
     # Customers can subscribe to a plan using a special subscription code which would
     # allow them to access an otherwise hidden plan.
     # The {SpecialPlanCode} can also contain an amount to be redeemed.
@@ -152,7 +152,7 @@ module Billingly
     # self.active_subscription will be the current subscription when this method is called.
     def on_subscription_success
     end
-    
+
     # Creates a general ledger from {JournalEntry journal entries}.
     # Every {Invoice} and {Payment} involves movements to the customer's account.
     # which are registered as a {JournalEntry}.
@@ -172,7 +172,7 @@ module Billingly
         end
       end
     end
-    
+
     # Shortcut for adding {#journal_entries} for this customer.
     # @note Most likely, you will never add entries to the customer journal yourself.
     #       These are created when {Invoice invoicing} or crediting {Payment payments}
@@ -182,12 +182,12 @@ module Billingly
         accounts << extra
         extra = {}
       end
-      
+
       accounts.each do |account|
         journal_entries.create!(extra.merge(amount: amount, account: account.to_s))
       end
     end
-    
+
     # A customer who has overdue invoices at the time of asking this question is
     # considered a debtor.
     #
@@ -196,7 +196,7 @@ module Billingly
     #   rake task goes through the process of {#deactivate_all_debtors deactivating all debtors}.
     #
     #   Furthermore, customers may unsubscribe before their {Invoice invoices} become overdue,
-    #   hence they may be in a deactivated state and not be debtors yet. 
+    #   hence they may be in a deactivated state and not be debtors yet.
     def self.debtors
        joins(:invoices).readonly(false)
         .where("#{Billingly::Invoice.table_name}.due_on < ?", Time.now)
@@ -222,14 +222,14 @@ module Billingly
       charge_pending_invoices
       reactivate if deactivated? && deactivation_reason == 'debtor'
     end
-    
+
     # Terminate a customer's subscription to the service.
     # Customers are deactivated due to lack of payment, because they decide to end their
     # subscription to your service or because their trial period expired.
     #
     # Use the shortcuts:
     #   {#deactivate_left_voluntarily}, {#deactivate_trial_expired} or {#deactivate_debtor}
-    # 
+    #
     # Deactivated customers can always be {#reactivate reactivated} later.
     # @param reason [Symbol] the deactivation reason, see {DEACTIVATION_REASONS}
     # @return [self, nil] nil if the account was already deactivated, self otherwise.
@@ -241,7 +241,7 @@ module Billingly
       save!
       return self
     end
-    
+
     DEACTIVATION_REASONS.each do |reason|
       define_method("deactivate_#{reason}") do
         deactivate(reason.to_sym)
@@ -252,7 +252,7 @@ module Billingly
     def deactivate_left_voluntarily
       deactivate('left_voluntarily')
     end
-    
+
     # @see #deactivate
     def deactivate_trial_expired
       deactivate('trial_expired')
@@ -275,7 +275,7 @@ module Billingly
       subscribe_to_plan(new_plan)
       return self
     end
-    
+
     # Charges all invoices for which the customer has enough balance.
     # Oldest invoices are charged first, newer invoices should not be charged until
     # the oldest ones are paid.
@@ -286,7 +286,7 @@ module Billingly
       invoices.where(deleted_on: nil, paid_on: nil).order('period_start')
         .each{|invoice| break unless invoice.charge}
     end
-    
+
     # Can this customer subscribe to a plan?.
     # You may want to prevent customers from upgrading or downgrading to other plans
     # depending on their usage of your service.
@@ -304,7 +304,7 @@ module Billingly
       return false if debtor?
       return true
     end
-    
+
     # Some customers do not want to be bothered via email, which is understandable.
     # You can override this method to decide which customers should never be emailed
     # with invoices, receipts or when their trial is over.

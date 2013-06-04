@@ -15,7 +15,9 @@ Gem::Specification.new do |s|
 
   s.files = Dir["{app,config,db,lib}/**/*"] + ["MIT-LICENSE", "Rakefile", "README.md", "TUTORIAL.rdoc"]
 
-  s.add_dependency "rails", "~> 3.2.0"
+  s.required_ruby_version = Gem::Requirement.new('>= 1.9.2')
+
+  s.add_dependency 'rails', '>= 3.0'
   s.add_dependency "validates_email_format_of"
   s.add_dependency "has_duration"
   s.add_dependency "ean13"

@@ -1,6 +1,0 @@
-.span4.offset4
-  .well
-    %h3 Enter your Promo Code
-    = form_tag redemptions_path, :class => 'form-inline' do
-      = text_field_tag :promo_code, params[:promo_code], :class => 'input-large', :placeholder => 'Promo Code'
-      = submit_tag 'Redeem!', :class => 'btn btn-success btn-large'
