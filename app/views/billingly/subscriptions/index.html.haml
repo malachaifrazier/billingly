@@ -1,0 +1,10 @@
+%h1 Your Subscription
+
+= render 'deactivation_notice'
+
+= render 'current_subscription', subscription: @subscription
+
+= render 'plans', plans: @plans, subscription: @subscription
+
+= render 'invoices', invoices: @invoices
+
