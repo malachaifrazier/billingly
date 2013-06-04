@@ -16,7 +16,6 @@ ActiveRecord::Schema.define(:version => 20120928205624) do
   create_table "billingly_customers", :force => true do |t|
     t.datetime "deactivated_since"
     t.string   "deactivation_reason"
-    t.string   "email",               :null => false
   end
 
   create_table "billingly_invoices", :force => true do |t|

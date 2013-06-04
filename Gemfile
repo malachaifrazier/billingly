@@ -6,7 +6,6 @@ source "http://rubygems.org"
 # gemspec
 
 gem 'rails', ">= 3.2.0"
-gem 'validates_email_format_of'
 gem 'pg'
 gem 'ean13'
 
@@ -17,7 +16,7 @@ group :assets do
 end
 
 group :development, :test do
- gem "rspec-rails"
+ gem "rspec-rails", '2.14.0.rc1'
  gem "capybara"
  gem "factory_girl_rails"
 end
