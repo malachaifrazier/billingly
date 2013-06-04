@@ -5,6 +5,7 @@ log/*.log
 pkg/
 doc
 .yardoc
+spec/dummy/config/database.yml
 spec/dummy/log/*.log
 spec/dummy/tmp/
 spec/dummy/.sass-cache
